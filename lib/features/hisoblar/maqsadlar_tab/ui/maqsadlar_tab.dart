@@ -11,7 +11,7 @@ class MaqsadlarTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: BlocBuilder<MaqsadCubit, MaqsadState>(
         builder: (context, state) {
           return Column(
@@ -53,9 +53,7 @@ class MaqsadlarTab extends StatelessWidget {
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey[400]!,
-                                    ),
+                                    border: Border.all(color: maqsad.color),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Padding(
@@ -68,14 +66,16 @@ class MaqsadlarTab extends StatelessWidget {
                                               height: 45,
                                               width: 45,
                                               decoration: BoxDecoration(
-                                                color: Colors.grey[400],
+                                                color: maqsad.color.withOpacity(
+                                                  0.15,
+                                                ),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
                                               child: Icon(
                                                 maqsad.icon,
                                                 size: 25,
-                                                color: Colors.white,
+                                                color: maqsad.color,
                                               ),
                                             ),
                                             const SizedBox(width: 12),
@@ -92,15 +92,11 @@ class MaqsadlarTab extends StatelessWidget {
                                                       Text(
                                                         maqsad.name,
                                                         style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
                                                         ),
                                                       ),
                                                       Text(
                                                         '${maqsad.target} UZS',
                                                         style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
                                                         ),
                                                       ),
                                                     ],
@@ -146,7 +142,7 @@ class MaqsadlarTab extends StatelessWidget {
                                                 AlwaysStoppedAnimation<Color>(
                                                   maqsad.progress >= 1.0
                                                       ? Colors.green
-                                                      : Colors.blue,
+                                                      : maqsad.color,
                                                 ),
                                           ),
                                         ),

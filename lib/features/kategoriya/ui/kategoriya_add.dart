@@ -1,44 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pulkam/features/hisoblar/widgets/calculator/calculator_sheet.dart';
-import 'package:pulkam/features/hisoblar/maqsadlar_tab/data/maqsad_model.dart';
-import 'package:pulkam/features/hisoblar/maqsadlar_tab/logic/maqsad_cubit.dart';
+import '../logic/kategoriya_cubit.dart';
+import '../data/kategoriya_model.dart';
 import 'package:pulkam/features/hisoblar/widgets/icon/icon_picker_dialog.dart';
 
-class MaqsadAdd extends StatefulWidget {
-  final MaqsadModel? maqsadToEdit;
-  const MaqsadAdd({super.key, this.maqsadToEdit});
+class KategoriyaAdd extends StatefulWidget {
+  final KategoriyaModel? kategoriyaToEdit;
+  const KategoriyaAdd({super.key, this.kategoriyaToEdit});
 
   @override
-  State<MaqsadAdd> createState() => _MaqsadAddState();
+  State<KategoriyaAdd> createState() => _KategoriyaAddState();
 }
 
-class _MaqsadAddState extends State<MaqsadAdd> {
-  String _balance = '0';
-  String _target = '0';
-  TextEditingController _nameController = TextEditingController();
-  IconData _selectedIcon = Icons.add_card_outlined;
+class _KategoriyaAddState extends State<KategoriyaAdd> {
+  late TextEditingController _nameController;
+  IconData _selectedIcon = Icons.star_outline;
   Color _selectedColor = Colors.grey;
-
-  void _openCalculator({required Function(String) onConfirm}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => CalculatorSheet(currency: 'UZS', onConfirm: onConfirm),
-    );
-  }
+  KategoriyaTuri _selectedTuri = KategoriyaTuri.chiqim;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text: widget.maqsadToEdit?.name ?? '',
+      text: widget.kategoriyaToEdit?.name ?? '',
     );
-    _balance = widget.maqsadToEdit?.balance ?? '0';
-    _target = widget.maqsadToEdit?.target ?? '0';
-    _selectedIcon = widget.maqsadToEdit?.icon ?? Icons.add_card_outlined;
-    _selectedColor = widget.maqsadToEdit?.color ?? Colors.grey;
+    _selectedIcon = widget.kategoriyaToEdit?.icon ?? Icons.star_outline;
+    _selectedColor = widget.kategoriyaToEdit?.color ?? Colors.grey;
+    _selectedTuri = widget.kategoriyaToEdit?.turi ?? KategoriyaTuri.chiqim;
   }
 
   @override
@@ -51,25 +39,28 @@ class _MaqsadAddState extends State<MaqsadAdd> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.maqsadToEdit != null ? 'Maqsadni tahrirlash' : 'Yangi Maqsad',
-        ),
+        title: Text(widget.kategoriyaToEdit != null
+            ? 'Kategoriyani tahrirlash'
+            : 'Yangi Kategoriya'),
         centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
+            // Nom
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'Maqsad nomini kiriting',
+                labelText: 'Kategoriya nomini kiriting',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
             const SizedBox(height: 16),
+
+            // Icon tanlang
             GestureDetector(
               onTap: () async {
                 final result = await showDialog<Map<String, dynamic>>(
@@ -113,73 +104,68 @@ class _MaqsadAddState extends State<MaqsadAdd> {
               ),
             ),
             const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _openCalculator(
-                onConfirm: (value) => setState(() => _balance = value),
+
+            // Turi tanlang — dropdown
+            Container(
+              height: 60,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[400]!),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[400]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text('Hozirgi balans'), Text(_balance + ' UZS')],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<KategoriyaTuri>(
+                    isExpanded: true,
+                    value: _selectedTuri,
+                    items: const [
+                      DropdownMenuItem(
+                        value: KategoriyaTuri.chiqim,
+                        child: Text('Chiqim'),
+                      ),
+                      DropdownMenuItem(
+                        value: KategoriyaTuri.kirim,
+                        child: Text('Kirim'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedTuri = value);
+                      }
+                    },
                   ),
                 ),
               ),
             ),
-            SizedBox(height: 16),
-            InkWell(
-              onTap: () => _openCalculator(
-                onConfirm: (value) => setState(() => _target = value),
-              ),
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[400]!),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text('Maqsad puli'), Text('$_target UZS')],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
+
+            // Saqlash
             ElevatedButton(
               onPressed: () {
                 if (_nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Iltimos, maqsad nomini kiriting!'),
+                      content: Text('Iltimos, kategoriya nomini kiriting!'),
                       backgroundColor: Colors.red,
                     ),
                   );
                   return;
                 }
 
-                final newMaqsad = MaqsadModel(
+                final newKategoriya = KategoriyaModel(
                   name: _nameController.text,
-                  balance: _balance,
-                  target: _target,
                   icon: _selectedIcon,
                   color: _selectedColor,
+                  turi: _selectedTuri,
                 );
 
-                if (widget.maqsadToEdit != null) {
-                  context.read<MaqsadCubit>().updateMaqsad(
-                    widget.maqsadToEdit!,
-                    newMaqsad,
+                if (widget.kategoriyaToEdit != null) {
+                  context.read<KategoriyaCubit>().updateKategoriya(
+                    widget.kategoriyaToEdit!,
+                    newKategoriya,
                   );
                 } else {
-                  context.read<MaqsadCubit>().addMaqsad(newMaqsad);
+                  context.read<KategoriyaCubit>().addKategoriya(newKategoriya);
                 }
                 Navigator.pop(context);
               },

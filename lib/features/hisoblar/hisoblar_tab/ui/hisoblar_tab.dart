@@ -11,7 +11,7 @@ class HisoblarTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: BlocBuilder<HisobCubit, HisobState>(
         builder: (context, state) {
           return Column(
@@ -42,7 +42,6 @@ class HisoblarTab extends StatelessWidget {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(8),
                                 onTap: () {
-                                  print('onTap ishladi');
                                   showModalBottomSheet(
                                     context: context,
                                     backgroundColor: Colors.transparent,
@@ -56,7 +55,7 @@ class HisoblarTab extends StatelessWidget {
                                   height: 60,
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: Colors.grey[400]!,
+                                      color: hisob.color,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -68,7 +67,9 @@ class HisoblarTab extends StatelessWidget {
                                           height: 45,
                                           width: 45,
                                           decoration: BoxDecoration(
-                                            color: Colors.grey[400],
+                                            color: hisob.color.withOpacity(
+                                              0.15,
+                                            ),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -76,7 +77,7 @@ class HisoblarTab extends StatelessWidget {
                                           child: Icon(
                                             hisob.icon,
                                             size: 25,
-                                            color: Colors.white,
+                                            color: hisob.color,
                                           ),
                                         ),
                                         const SizedBox(width: 20),

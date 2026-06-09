@@ -4,6 +4,8 @@ import 'package:pulkam/main_screen/logic/cubit.dart';
 import 'main_screen/main_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
+import 'features/kategoriya/logic/kategoriya_cubit.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -22,6 +24,7 @@ class MyApp extends StatelessWidget {
           BlocProvider<MainScreenCubit>(create: (context) => MainScreenCubit()),
           BlocProvider<HisobCubit>(create: (context) => HisobCubit()),
           BlocProvider<MaqsadCubit>(create: (context) => MaqsadCubit()),
+          BlocProvider<KategoriyaCubit>(create: (context) => KategoriyaCubit()),
         ],
         child: const MainScreen(),
       ),

@@ -25,6 +25,8 @@ class _HisobAddState extends State<HisobAdd> {
     _nameController = TextEditingController(
       text: widget.hisobToEdit?.name ?? '',
     );
+    _selectedIcon = widget.hisobToEdit?.icon ?? Icons.add_card_outlined;
+    _selectedColor = widget.hisobToEdit?.color ?? Colors.grey;
     _balance = widget.hisobToEdit?.balance ?? '0';
   }
 
@@ -144,7 +146,8 @@ class _HisobAddState extends State<HisobAdd> {
                 final newHisob = HisobModel(
                   name: _nameController.text,
                   balance: _balance,
-                  icon: Icons.add_card_outlined,
+                  icon: _selectedIcon,
+                  color: _selectedColor,
                 );
 
                 if (widget.hisobToEdit != null) {

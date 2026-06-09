@@ -5,12 +5,14 @@ class MaqsadModel {
   final String balance;
   final String target;
   final IconData icon;
+  final Color color;
 
   MaqsadModel({
     required this.name,
     required this.balance,
     required this.target,
     required this.icon,
+    this.color = Colors.grey,
   });
 
   double get progress {
@@ -25,8 +27,9 @@ class MaqsadModel {
       other.name == name &&
       other.balance == balance &&
       other.target == target &&
-      other.icon == icon;
+      other.icon == icon &&
+      other.color == color;
 
   @override
-  int get hashCode => Object.hash(name, balance, target, icon);
+  int get hashCode => Object.hash(name, balance, target, icon, color);
 }

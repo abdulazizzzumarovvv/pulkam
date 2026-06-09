@@ -9,8 +9,8 @@ class HisobState {
 
 class HisobCubit extends Cubit<HisobState> {
   HisobCubit() : super(HisobState([
-    HisobModel(name: 'Karta', balance: '0', icon: Icons.add_card_outlined),
-    HisobModel(name: 'Naqd pul', balance: '0', icon: Icons.money),
+    HisobModel(name: 'Karta', balance: '0', icon: Icons.add_card_outlined, color: Colors.blue),
+    HisobModel(name: 'Naqd pul', balance: '0', icon: Icons.money, color: Colors.green),
   ]));
 
   void addHisob(HisobModel hisob) {

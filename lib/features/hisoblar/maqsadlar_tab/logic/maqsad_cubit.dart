@@ -13,7 +13,8 @@ class MaqsadCubit extends Cubit<MaqsadState> {
       name: 'Mening orzularim',
       balance: '0',
       target: '1000000',
-      icon: Icons.stadium_sharp,
+      icon: Icons.auto_awesome,
+      color: Colors.purple,
     ),
   ]));
 

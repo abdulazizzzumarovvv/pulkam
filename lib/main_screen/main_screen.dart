@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/hisoblar/hisoblar.dart';
+import 'package:pulkam/features/kategoriya/ui/kategoriya.dart';
 import 'package:pulkam/main_screen/logic/cubit.dart';
 import 'package:pulkam/main_screen/logic/state.dart';
 
@@ -16,7 +17,7 @@ class MainScreen extends StatelessWidget {
             case 0:
               return Hisoblar(); // Replace with your actual body content for the first tab
             case 1:
-              return Container(); // Replace with your actual body content for the second tab
+              return Kategoriya(); // Replace with your actual body content for the second tab
             case 2:
               return Container(); // Replace with your actual body content for the third tab
             case 3:

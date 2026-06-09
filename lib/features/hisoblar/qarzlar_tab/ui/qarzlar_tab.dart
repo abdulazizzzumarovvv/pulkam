@@ -7,7 +7,7 @@ class QarzlarTab extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -30,11 +30,11 @@ class QarzlarTab extends StatelessWidget{
                     height: 45,
                     width: 45,
                     decoration: BoxDecoration(
-                      color: Colors.grey[400],
+                      color:Colors.red[400],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
-                      Icons.account_balance_wallet_outlined,
+                      Icons.money_off,
                       size: 25,
                       color: Colors.white,
                     ),
