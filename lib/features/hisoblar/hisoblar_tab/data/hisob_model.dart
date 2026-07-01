@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
-class HisobModel {
+part 'hisob_model.g.dart';
+
+@HiveType(typeId: 0)
+class HisobModel extends HiveObject {
+  @HiveField(0)
   final String name;
+
+  @HiveField(1)
   final String balance;
-  final IconData icon;
-  final Color color;
+
+  @HiveField(2)
+  final int iconCode;
+
+  @HiveField(3)
+  final int colorValue;
 
   HisobModel({
     required this.name,
     required this.balance,
-    required this.icon,
-    this.color = Colors.grey,
+    required this.iconCode,
+    required this.colorValue,
   });
 
-  @override
-  bool operator ==(Object other) =>
-      other is HisobModel &&
-      other.name == name &&
-      other.balance == balance &&
-      other.icon == icon &&
-      other.color == color;
-
-  @override
-  int get hashCode => Object.hash(name, balance, icon, color);
+  IconData get icon => IconData(iconCode, fontFamily: 'MaterialIcons');
+  Color get color => Color(colorValue);
 }

@@ -1,5 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
 import '../data/maqsad_model.dart';
 
 class MaqsadState {
@@ -8,27 +9,88 @@ class MaqsadState {
 }
 
 class MaqsadCubit extends Cubit<MaqsadState> {
-  MaqsadCubit() : super(MaqsadState([
-    MaqsadModel(
+  MaqsadCubit() : super(MaqsadState([])) {
+    _load();
+  }
+
+  Box<MaqsadModel> get _box => Hive.box<MaqsadModel>('maqsadlar');
+
+  void _load() {
+    final list = _box.values.toList();
+    if (list.isEmpty) {
+      _addDefaults();
+    } else {
+      emit(MaqsadState(list));
+    }
+  }
+
+  Future<void> _addDefaults() async {
+    await _box.add(MaqsadModel(
       name: 'Mening orzularim',
       balance: '0',
       target: '1000000',
-      icon: Icons.auto_awesome,
-      color: Colors.purple,
-    ),
-  ]));
-
-  void addMaqsad(MaqsadModel maqsad) {
-    emit(MaqsadState([...state.maqsadlar, maqsad]));
+      iconCode: Icons.auto_awesome.codePoint,
+      colorValue: Colors.purple.toARGB32(),
+    ));
+    emit(MaqsadState(_box.values.toList()));
   }
 
-  void updateMaqsad(MaqsadModel old, MaqsadModel updated) {
-    final list = state.maqsadlar.map((m) => m == old ? updated : m).toList();
-    emit(MaqsadState(list));
+  // Balans nishonga yetganda completedAt sanasini belgilaydi (yoki tozalaydi)
+  int _completion(String balance, String target, int oldCompletedAt) {
+    final bal = double.tryParse(balance) ?? 0;
+    final goal = double.tryParse(target) ?? 0;
+    if (goal > 0 && bal >= goal) {
+      return oldCompletedAt > 0
+          ? oldCompletedAt
+          : DateTime.now().millisecondsSinceEpoch;
+    }
+    return 0;
   }
 
-  void deleteMaqsad(MaqsadModel maqsad) {
-    final list = state.maqsadlar.where((m) => m != maqsad).toList();
-    emit(MaqsadState(list));
+  Future<void> addMaqsad(MaqsadModel maqsad) async {
+    final m = MaqsadModel(
+      name: maqsad.name,
+      balance: maqsad.balance,
+      target: maqsad.target,
+      iconCode: maqsad.iconCode,
+      colorValue: maqsad.colorValue,
+      isCompleted: maqsad.isCompleted,
+      completedAt: _completion(maqsad.balance, maqsad.target, 0),
+    );
+    await _box.add(m);
+    emit(MaqsadState(_box.values.toList()));
+  }
+
+  Future<void> updateMaqsad(MaqsadModel old, MaqsadModel updated) async {
+    final m = MaqsadModel(
+      name: updated.name,
+      balance: updated.balance,
+      target: updated.target,
+      iconCode: updated.iconCode,
+      colorValue: updated.colorValue,
+      isCompleted: updated.isCompleted,
+      completedAt: _completion(updated.balance, updated.target, old.completedAt),
+    );
+    await _box.put(old.key, m);
+    emit(MaqsadState(_box.values.toList()));
+  }
+
+  Future<void> deleteMaqsad(MaqsadModel maqsad) async {
+    await maqsad.delete();
+    emit(MaqsadState(_box.values.toList()));
+  }
+
+  Future<void> updateBalance(MaqsadModel maqsad, String yangiBalance) async {
+    final updated = MaqsadModel(
+      name: maqsad.name,
+      balance: yangiBalance,
+      target: maqsad.target,
+      iconCode: maqsad.iconCode,
+      colorValue: maqsad.colorValue,
+      isCompleted: maqsad.isCompleted,
+      completedAt: _completion(yangiBalance, maqsad.target, maqsad.completedAt),
+    );
+    await _box.put(maqsad.key, updated);
+    emit(MaqsadState(_box.values.toList()));
   }
 }

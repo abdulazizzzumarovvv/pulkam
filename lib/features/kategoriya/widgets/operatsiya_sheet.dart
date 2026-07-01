@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/kategoriya_model.dart';
-import '../logic/kategoriya_cubit.dart';
 import '../../hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar/hisoblar_tab/data/hisob_model.dart';
 import 'package:pulkam/features/hisoblar/widgets/calculator/calculator_sheet.dart';
+import 'package:pulkam/features/amallar/data/amal_model.dart';
+import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
 
 class OperatsiyaSheet extends StatefulWidget {
   final KategoriyaModel kategoriya;
@@ -56,42 +57,41 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
     }
 
     final hisobBalance = double.tryParse(_selectedHisob!.balance) ?? 0;
+    final isChiqim =
+        widget.kategoriya.kategoriyaTuri == KategoriyaTuri.chiqim;
 
-    if (widget.kategoriya.turi == KategoriyaTuri.chiqim) {
-      // Hisobdan pul chiqadi
-      if (amount > hisobBalance) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Hisobda yetarli mablag\' yo\'q!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      final newBalance = hisobBalance - amount;
-      context.read<HisobCubit>().updateHisob(
-        _selectedHisob!,
-        HisobModel(
-          name: _selectedHisob!.name,
-          balance: newBalance.toStringAsFixed(0),
-          icon: _selectedHisob!.icon,
-          color: _selectedHisob!.color,
+    if (isChiqim && amount > hisobBalance) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hisobda yetarli mablag\' yo\'q!'),
+          backgroundColor: Colors.red,
         ),
       );
-    } else {
-      // Hisobga pul kiradi
-      final newBalance = hisobBalance + amount;
-      context.read<HisobCubit>().updateHisob(
-        _selectedHisob!,
-        HisobModel(
-          name: _selectedHisob!.name,
-          balance: newBalance.toStringAsFixed(0),
-          icon: _selectedHisob!.icon,
-          color: _selectedHisob!.color,
-        ),
-      );
+      return;
     }
+
+    final newBalance =
+        isChiqim ? hisobBalance - amount : hisobBalance + amount;
+
+    context.read<HisobCubit>().updateHisob(
+      _selectedHisob!,
+      HisobModel(
+        name: _selectedHisob!.name,
+        balance: newBalance.toStringAsFixed(2),
+        iconCode: _selectedHisob!.iconCode,
+        colorValue: _selectedHisob!.colorValue,
+      ),
+    );
+
+    context.read<AmalCubit>().addAmal(AmalModel(
+      kategoriyaName: widget.kategoriya.name,
+      amount: amount.toStringAsFixed(2),
+      kategoriyaIconCode: widget.kategoriya.iconCode,
+      kategoriyaColorValue: widget.kategoriya.colorValue,
+      hisobName: _selectedHisob!.name,
+      isKirim: !isChiqim,
+      timestamp: DateTime.now().millisecondsSinceEpoch,
+    ));
 
     Navigator.pop(context);
   }
@@ -114,7 +114,6 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Container(
             width: 36,
             height: 4,
@@ -125,17 +124,14 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Hisob + Kategoriya
           Row(
             children: [
-              // Hisob tanlash
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Hisob',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey)),
+                    Text('Hisob',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -164,8 +160,7 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
                                       color: h.color.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: Icon(h.icon,
-                                        size: 16, color: h.color),
+                                    child: Icon(h.icon, size: 16, color: h.color),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(h.name,
@@ -183,15 +178,12 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Kategoriya (statik)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Kategoriya',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey)),
+                    Text('Kategoriya',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                     const SizedBox(height: 8),
                     Container(
                       height: 48,
@@ -208,13 +200,12 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
                               height: 28,
                               width: 28,
                               decoration: BoxDecoration(
-                                color: widget.kategoriya.color
-                                    .withOpacity(0.15),
+                                color:
+                                    widget.kategoriya.color.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Icon(widget.kategoriya.icon,
-                                  size: 16,
-                                  color: widget.kategoriya.color),
+                                  size: 16, color: widget.kategoriya.color),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -235,7 +226,6 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Summa
           InkWell(
             onTap: _openCalculator,
             child: Container(
@@ -254,7 +244,8 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
                       '$_amount UZS',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: widget.kategoriya.turi == KategoriyaTuri.chiqim
+                        color: widget.kategoriya.kategoriyaTuri ==
+                                KategoriyaTuri.chiqim
                             ? Colors.red
                             : Colors.green,
                       ),
@@ -266,13 +257,12 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Saqlash
           ElevatedButton(
             onPressed: _saqlash,
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
               backgroundColor:
-                  widget.kategoriya.turi == KategoriyaTuri.chiqim
+                  widget.kategoriya.kategoriyaTuri == KategoriyaTuri.chiqim
                       ? Colors.red
                       : Colors.green,
               shape: RoundedRectangleBorder(
@@ -280,7 +270,7 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
               ),
             ),
             child: Text(
-              widget.kategoriya.turi == KategoriyaTuri.chiqim
+              widget.kategoriya.kategoriyaTuri == KategoriyaTuri.chiqim
                   ? 'Chiqim qilish'
                   : 'Kirim qilish',
               style: const TextStyle(color: Colors.white),
