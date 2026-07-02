@@ -2,27 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
-import 'package:pulkam/features/ai_analiz/ui/ai_analiz_screen.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
-const _kBg = Color(0xFF13111F);
-const _kCard = Color(0xFF1E1C30);
 const _kSubtext = Color(0xFF8A88A0);
 const _base = 24000;
 
-const _months = [
-  'Yanvar',
-  'Fevral',
-  'Mart',
-  'Aprel',
-  'May',
-  'Iyun',
-  'Iyul',
-  'Avgust',
-  'Sentabr',
-  'Oktabr',
-  'Noyabr',
-  'Dekabr',
-];
 
 String _fmtShort(double v) {
   if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
@@ -31,16 +16,6 @@ String _fmtShort(double v) {
   return v.toStringAsFixed(0);
 }
 
-String _fmt(double v) {
-  final s = v.abs().toStringAsFixed(2);
-  final parts = s.split('.');
-  final buf = StringBuffer();
-  for (int i = 0; i < parts[0].length; i++) {
-    if (i > 0 && (parts[0].length - i) % 3 == 0) buf.write(',');
-    buf.write(parts[0][i]);
-  }
-  return '${buf.toString()}.${parts[1]}';
-}
 
 DateTime _p2m(int p) {
   final t = p - _base;
@@ -58,16 +33,19 @@ class Kategoriya extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
+    final kCard = Color.alphaBlend(Colors.white.withValues(alpha: 0.07), kBg);
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: kBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Statistika',
-          style: TextStyle(
+        title: Text(
+          l10n.statistika,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -76,18 +54,12 @@ class Kategoriya extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AiAnalizScreen()),
-              ),
-              child: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.12),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: 20,
-                ),
+            child: CircleAvatar(
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              child: Icon(
+                Icons.auto_awesome,
+                color: Colors.white.withValues(alpha: 0.35),
+                size: 20,
               ),
             ),
           ),
@@ -157,15 +129,22 @@ class _StatsBodyState extends State<_StatsBody> {
             itemBuilder: (_, page) {
               final sel = page == _page;
               final m = _p2m(page);
-              return Center(
-                child: Text(
-                  _months[m.month - 1],
-                  style: TextStyle(
-                    fontSize: sel ? 17 : 14,
-                    fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
-                    color: sel
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.35),
+              return GestureDetector(
+                onTap: () => _monthCtrl.animateToPage(
+                  page,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                child: Center(
+                  child: Text(
+                    context.l10n.oylarToliq[m.month - 1],
+                    style: TextStyle(
+                      fontSize: sel ? 17 : 14,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.normal,
+                      color: sel
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.35),
+                    ),
                   ),
                 ),
               );
@@ -218,6 +197,7 @@ class _KirimChiqimToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final amallar = context.watch<AmalCubit>().state.amallar.where((a) {
       final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
       return dt.year == month.year && dt.month == month.month;
@@ -286,7 +266,7 @@ class _KirimChiqimToggle extends StatelessWidget {
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
-                        'UZS',
+                        context.watch<SozlamalarCubit>().state.valyutaKod,
                         style: TextStyle(
                           color: selected ? Colors.white : color,
                           fontSize: 9,
@@ -300,7 +280,7 @@ class _KirimChiqimToggle extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          _fmt(amount),
+                          appFmt(amount, context.read<SozlamalarCubit>().state.formatKod),
                           style: TextStyle(
                             color: selected ? Colors.white : color,
                             fontSize: 18,
@@ -325,14 +305,14 @@ class _KirimChiqimToggle extends StatelessWidget {
           chiqim: true,
           amount: oylikChiqim,
           color: _red,
-          label: 'Oylik chiqim',
+          label: l10n.oylikChiqim,
           isLeft: true,
         ),
         half(
           chiqim: false,
           amount: oylikKirim,
           color: _green,
-          label: 'Oylik kirim',
+          label: l10n.oylikKirim,
           isLeft: false,
         ),
       ],
@@ -365,6 +345,9 @@ class _StatsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
+    final kCard = Color.alphaBlend(Colors.white.withValues(alpha: 0.07), kBg);
     final amallar = context.watch<AmalCubit>().state.amallar.where((a) {
       final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
       return dt.year == month.year &&
@@ -384,7 +367,7 @@ class _StatsPage extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              "Bu oyda ma'lumot yo'q",
+              context.l10n.malumotYoq,
               style: TextStyle(color: Colors.grey[500], fontSize: 15),
             ),
           ],
@@ -432,26 +415,24 @@ class _StatsPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: _kCard,
+              color: kCard,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isChiqim
-                      ? "Kunlik o'rtacha harajat"
-                      : "Kunlik o'rtacha daromad",
+                  l10n.kunlikOrtacha,
                   style: TextStyle(color: _kSubtext, fontSize: 14),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _UzsBadge(),
+                    _UzsBadge(context),
                     const SizedBox(width: 8),
                     Text(
-                      _fmt(avgDaily),
+                      appFmt(avgDaily, context.read<SozlamalarCubit>().state.formatKod),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -489,7 +470,7 @@ class _StatsPage extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'UZS',
+                      context.watch<SozlamalarCubit>().state.valyutaKod,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 12,
@@ -509,16 +490,16 @@ class _StatsPage extends StatelessWidget {
     );
   }
 
-  Widget _UzsBadge() {
+  Widget _UzsBadge(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'UZS',
-        style: TextStyle(
+      child: Text(
+        context.watch<SozlamalarCubit>().state.valyutaKod,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -542,6 +523,8 @@ class _CatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final kBg = context.read<SozlamalarCubit>().state.mavzuRang;
+    final kCard = Color.alphaBlend(Colors.white.withValues(alpha: 0.07), kBg);
     final color = Color(cat.color);
     final icon = IconData(cat.icon, fontFamily: 'MaterialIcons');
     final frac = total > 0 ? (cat.amount / total).clamp(0.0, 1.0) : 0.0;
@@ -551,7 +534,7 @@ class _CatTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: _kCard,
+        color: kCard,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -570,7 +553,7 @@ class _CatTile extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  cat.name,
+                  context.l10n.defaultKatNom(cat.name),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
@@ -594,7 +577,7 @@ class _CatTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'UZS',
+                      context.watch<SozlamalarCubit>().state.valyutaKod,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 10,
@@ -604,7 +587,7 @@ class _CatTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    _fmt(cat.amount),
+                    appFmt(cat.amount, context.read<SozlamalarCubit>().state.formatKod),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,

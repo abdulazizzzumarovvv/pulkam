@@ -5,23 +5,9 @@ import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import 'package:pulkam/features/hisoblar/maqsadlar_tab/logic/maqsad_cubit.dart';
 import 'package:pulkam/features/kategoriya/data/kategoriya_model.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
-const _months = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr',
-];
-
-String _fmt(double v) {
-  final s = v.abs().toStringAsFixed(2);
-  final parts = s.split('.');
-  final intPart = parts[0];
-  final buf = StringBuffer();
-  for (int i = 0; i < intPart.length; i++) {
-    if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-    buf.write(intPart[i]);
-  }
-  return '${buf.toString()}.${parts[1]}';
-}
 
 class AiAnalizScreen extends StatefulWidget {
   const AiAnalizScreen({super.key});
@@ -42,8 +28,8 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month + 1));
 
-  String get _monthLabel =>
-      '${_months[_selectedMonth.month - 1]} ${_selectedMonth.year}';
+  String _monthLabel(AppL10n l10n) =>
+      '${l10n.oylarToliq[_selectedMonth.month - 1]} ${_selectedMonth.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +44,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
         .maqsadlar
         .fold(0.0, (s, m) => s + (double.tryParse(m.balance) ?? 0));
     final totalSum = hisobSum + maqsadSum;
+    final l10n = context.l10n;
 
     return BlocBuilder<AmalCubit, AmalState>(
       builder: (context, state) {
@@ -109,9 +96,9 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
             centerTitle: true,
             title: Column(
               children: [
-                const Text('Umumiy balans',
+                Text(l10n.umumiyBalans,
                     style: TextStyle(fontSize: 13, color: Colors.grey)),
-                Text('${_fmt(totalSum)} UZS',
+                Text('${appFmt(totalSum, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold)),
               ],
@@ -134,7 +121,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                     IconButton(
                         onPressed: _prevMonth,
                         icon: const Icon(Icons.chevron_left)),
-                    Text(_monthLabel,
+                    Text(_monthLabel(l10n),
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                     IconButton(
@@ -153,7 +140,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                   child: Row(
                     children: [
                       _ToggleBtn(
-                        label: 'Chiqim',
+                        label: l10n.chiqim,
                         amount: chiqimTotal,
                         isSelected:
                             _tanlangan == KategoriyaTuri.chiqim,
@@ -162,7 +149,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                             () => _tanlangan = KategoriyaTuri.chiqim),
                       ),
                       _ToggleBtn(
-                        label: 'Kirim',
+                        label: l10n.kirim,
                         amount: kirimTotal,
                         isSelected:
                             _tanlangan == KategoriyaTuri.kirim,
@@ -187,17 +174,17 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("O'rtacha xarajat",
+                      Text(l10n.ortachaXarajat,
                           style: TextStyle(fontWeight: FontWeight.w600)),
                       const SizedBox(height: 12),
                       _AvgRow(
                           icon: Icons.calendar_today,
-                          label: 'Bir kunda',
+                          label: l10n.birKunda,
                           value: avgDay),
                       const Divider(height: 16),
                       _AvgRow(
                           icon: Icons.calendar_today,
-                          label: 'Bir haftada',
+                          label: l10n.birHaftada,
                           value: avgWeek),
                     ],
                   ),
@@ -226,7 +213,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                                         size: 48,
                                         color: Colors.grey[400]),
                                     const SizedBox(height: 8),
-                                    Text('Tanlang',
+                                    Text(l10n.malumotYoq,
                                         style: TextStyle(
                                             color: Colors.grey[400])),
                                   ],
@@ -248,7 +235,7 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
                                       Icon(Icons.monetization_on_outlined,
                                           size: 32,
                                           color: Colors.grey[400]),
-                                      Text('Tanlang',
+                                      Text(l10n.malumotYoq,
                                           style: TextStyle(
                                               color: Colors.grey[400],
                                               fontSize: 12)),
@@ -307,7 +294,7 @@ class _ToggleBtn extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 13, fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
-              Text('${_fmt(amount)} UZS',
+              Text('${appFmt(amount, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
                   style: TextStyle(
                       color: color,
                       fontSize: 15,
@@ -343,7 +330,7 @@ class _AvgRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Text(label)),
-        Text('${_fmt(value)} UZS',
+        Text('${appFmt(value, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
             style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
       ],
     );

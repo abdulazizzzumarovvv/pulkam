@@ -1,52 +1,30 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/ui/malumotlar_screen.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../logic/amal_cubit.dart';
 import '../data/amal_model.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import 'package:pulkam/features/hisoblar/maqsadlar_tab/logic/maqsad_cubit.dart';
 import 'package:pulkam/features/hisoblar/widgets/calculator/kirim_chiqim_sheet.dart';
-import 'dart:ui'; 
-const _kBg = Color(0xFF13111F);
+import 'dart:ui';
+import 'package:pulkam/features/amallar/widgets/profile_dialog.dart';
+import 'package:pulkam/features/profile/logic/profile_cubit.dart';
+import 'dart:io';
+import 'package:pulkam/l10n.dart';
+
 const _kSubtext = Color(0xFF8A88A0);
 
-String _fmt(double v) {
-  final s = v.abs().toStringAsFixed(2);
-  final parts = s.split('.');
-  final intPart = parts[0];
-  final buf = StringBuffer();
-  for (int i = 0; i < intPart.length; i++) {
-    if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-    buf.write(intPart[i]);
-  }
-  return '${buf.toString()}.${parts[1]}';
+
+
+String _salomlashuv(AppL10n l10n) {
+  final hour = DateTime.now().hour;
+  if (hour < 6) return l10n.hayirliTun;
+  if (hour < 12) return l10n.hayirliTong;
+  if (hour < 18) return l10n.hayirliKun;
+  return l10n.hayirliKech;
 }
-
-const _months = [
-  'Yanvar',
-  'Fevral',
-  'Mart',
-  'Aprel',
-  'May',
-  'Iyun',
-  'Iyul',
-  'Avgust',
-  'Sentabr',
-  'Oktabr',
-  'Noyabr',
-  'Dekabr',
-];
-
-const _weekdays = [
-  '',
-  'Dushanba',
-  'Seshanba',
-  'Chorshanba',
-  'Payshanba',
-  'Juma',
-  'Shanba',
-  'Yakshanba',
-];
 
 // ── Asosiy ekran ─────────────────────────────────────────────────────
 class AmallarScreen extends StatelessWidget {
@@ -54,30 +32,87 @@ class AmallarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: kBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         leadingWidth: 72,
         leading: Padding(
           padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
-          child: CircleAvatar(
-            backgroundColor: Colors.white.withValues(alpha: 0.12),
-            child: const Icon(
-              CupertinoIcons.person_fill,
-              color: Colors.white,
-              size: 18,
+          child: GestureDetector(
+            onTap: () => showProfileDialog(context),
+            child: BlocBuilder<ProfileCubit, ProfileState>(
+              builder: (context, state) {
+                final avatarPath = state.avatarPath;
+                return CircleAvatar(
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  backgroundImage: avatarPath != null
+                      ? FileImage(File(avatarPath))
+                      : null,
+                  child: avatarPath == null
+                      ? const Icon(
+                          CupertinoIcons.person_fill,
+                          color: Colors.white,
+                          size: 18,
+                        )
+                      : null,
+                );
+              },
             ),
           ),
         ),
+        title: BlocBuilder<ProfileCubit, ProfileState>(
+          builder: (context, state) {
+            final name = state.profile?.fullName ?? state.name;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_salomlashuv(l10n)},',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (name != null && name.isNotEmpty)
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            );
+          },
+        ),
+        centerTitle: false,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
-            child: CircleAvatar(
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              child: const Icon(Icons.settings, color: Colors.white, size: 20),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MalumotlarScreen()),
+              ),
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withValues(alpha: 0.12),
+                child: const Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
             ),
           ),
         ],
@@ -96,7 +131,14 @@ class AmallarScreen extends StatelessWidget {
               .where((m) => !m.bajarilgan)
               .fold(0.0, (s, m) => s + (double.tryParse(m.balance) ?? 0));
           final totalSum = hisobSum + maqsadSum;
-          final parts = _fmt(totalSum).split('.');
+          final fmtKod = context.watch<SozlamalarCubit>().state.formatKod;
+          final commaDecimal = fmtKod == 'dot_comma' || fmtKod == 'space_comma';
+          final decSep = commaDecimal ? ',' : '.';
+          final formatted = appFmt(totalSum, fmtKod);
+          final sepIdx = formatted.lastIndexOf(decSep);
+          final parts = sepIdx >= 0
+              ? [formatted.substring(0, sepIdx), formatted.substring(sepIdx + 1)]
+              : [formatted, '00'];
 
           final allAmallar = context.watch<AmalCubit>().state.amallar;
           final today = DateTime.now();
@@ -127,7 +169,7 @@ class AmallarScreen extends StatelessWidget {
                     vertical: 16,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1C30),
+                    color: Color.alphaBlend(Colors.white.withValues(alpha: 0.07), kBg),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -140,7 +182,7 @@ class AmallarScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Umumiy balans',
+                              l10n.umumiyBalans,
                               style: TextStyle(color: _kSubtext, fontSize: 14),
                             ),
                             const SizedBox(height: 6),
@@ -167,7 +209,7 @@ class AmallarScreen extends StatelessWidget {
                                       left: 3,
                                     ),
                                     child: Text(
-                                      '.${parts[1]}',
+                                      '$decSep${parts[1]}',
                                       style: TextStyle(
                                         color: Colors.white.withValues(
                                           alpha: 0.5,
@@ -190,7 +232,9 @@ class AmallarScreen extends StatelessWidget {
                       InkWell(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const KirimChiqimSheet()),
+                          MaterialPageRoute(
+                            builder: (_) => const KirimChiqimSheet(),
+                          ),
                         ),
                         borderRadius: BorderRadius.circular(30),
                         child: ClipOval(
@@ -275,11 +319,11 @@ class AmallarScreen extends StatelessWidget {
                             ),
 
                             // 2. O'RTA: Mukammal markazlashgan matn
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Amallar',
+                                l10n.amallar,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.black87,
@@ -287,7 +331,7 @@ class AmallarScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // 3. O'NG TARAF: Mikrofon — Ai analiz pili uslubida
+                            // 3. O'NG TARAF: Mikrofon — Pro versiya kulrang uslubida
                             Container(
                               width:
                                   52, // Chap taraf bilan bir xil muvozanat kengligi
@@ -296,15 +340,13 @@ class AmallarScreen extends StatelessWidget {
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF6C3CE1,
-                                ).withValues(alpha: 0.1),
+                                color: Colors.grey.withValues(alpha: 0.08),
                                 shape: BoxShape.rectangle,
                                 borderRadius: BorderRadius.circular(100),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.mic_rounded,
-                                color: Color(0xFF6C3CE1),
+                                color: Colors.grey.withValues(alpha: 0.4),
                                 size: 20,
                               ),
                             ),
@@ -328,7 +370,7 @@ class AmallarScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 14),
                                     Text(
-                                      'Hali amallar mavjud emas',
+                                      l10n.haliAmallarYoq,
                                       style: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 15,
@@ -421,6 +463,7 @@ class _BarchaAmallarPageState extends State<_BarchaAmallarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -428,9 +471,13 @@ class _BarchaAmallarPageState extends State<_BarchaAmallarPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Barcha amallar',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          l10n.barchaAmallar,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       body: Column(
@@ -444,15 +491,24 @@ class _BarchaAmallarPageState extends State<_BarchaAmallarPage> {
               itemBuilder: (_, page) {
                 final m = _pageToMonth(page);
                 final isSelected = page == _currentPage;
-                return Center(
-                  child: Text(
-                    _months[m.month - 1],
-                    style: TextStyle(
-                      fontSize: isSelected ? 18 : 14,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isSelected ? Colors.black87 : Colors.grey[400],
+                return GestureDetector(
+                  onTap: () {
+                    _monthController.animateToPage(
+                      page,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Center(
+                    child: Text(
+                      context.l10n.oylarToliq[m.month - 1],
+                      style: TextStyle(
+                        fontSize: isSelected ? 18 : 14,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected ? Colors.black87 : Colors.grey[400],
+                      ),
                     ),
                   ),
                 );
@@ -489,7 +545,7 @@ class _BarchaAmallarPageState extends State<_BarchaAmallarPage> {
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              'Bu oyda amallar yo\'q',
+                              l10n.amalsizOy,
                               style: TextStyle(
                                 color: Colors.grey[400],
                                 fontSize: 15,
@@ -583,7 +639,7 @@ class _ExpandableDayState extends State<_ExpandableDay> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _weekdays[widget.date.weekday],
+                        context.l10n.haftaKunlari[widget.date.weekday],
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -591,7 +647,7 @@ class _ExpandableDayState extends State<_ExpandableDay> {
                         ),
                       ),
                       Text(
-                        '${_months[widget.date.month - 1]} ${widget.date.year}',
+                        '${context.l10n.oylarToliq[widget.date.month - 1]} ${widget.date.year}',
                         style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       ),
                     ],
@@ -602,7 +658,7 @@ class _ExpandableDayState extends State<_ExpandableDay> {
                   children: [
                     if (kirimTotal > 0)
                       Text(
-                        '+${_fmt(kirimTotal)}',
+                        '+${appFmt(kirimTotal, context.read<SozlamalarCubit>().state.formatKod)}',
                         style: const TextStyle(
                           color: Color(0xFF34C759),
                           fontSize: 13,
@@ -611,7 +667,7 @@ class _ExpandableDayState extends State<_ExpandableDay> {
                       ),
                     if (chiqimTotal > 0)
                       Text(
-                        '-${_fmt(chiqimTotal)}',
+                        '-${appFmt(chiqimTotal, context.read<SozlamalarCubit>().state.formatKod)}',
                         style: const TextStyle(
                           color: Color(0xFFFF3B30),
                           fontSize: 13,
@@ -706,7 +762,7 @@ class _AmalRowState extends State<_AmalRow> {
             const SizedBox(width: 14),
             Expanded(
               child: Text(
-                amal.kategoriyaName,
+                context.l10n.defaultKatNom(amal.kategoriyaName),
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: Colors.grey[900],
@@ -719,7 +775,7 @@ class _AmalRowState extends State<_AmalRow> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${amal.isKirim ? '+' : '-'}${_fmt(double.tryParse(amal.amount) ?? 0)}',
+                  '${amal.isKirim ? '+' : '-'}${appFmt(double.tryParse(amal.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)}',
                   style: TextStyle(
                     color: amal.isKirim
                         ? const Color(0xFF34C759)
@@ -776,6 +832,7 @@ class _UzsBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final kod = context.watch<SozlamalarCubit>().state.valyutaKod;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -783,7 +840,7 @@ class _UzsBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        'UZS',
+        kod,
         style: TextStyle(
           color: dark ? Colors.white : Colors.grey[700],
           fontSize: 12,

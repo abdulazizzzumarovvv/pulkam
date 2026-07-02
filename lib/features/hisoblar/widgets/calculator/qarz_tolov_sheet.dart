@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../../hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar_tab/data/hisob_model.dart';
 import '../../qarzlar_tab/logic/qarz_cubit.dart';
@@ -8,6 +9,7 @@ import '../../qarzlar_tab/data/qarz_model.dart';
 import '../../../amallar/logic/amal_cubit.dart';
 import '../../../amallar/data/amal_model.dart';
 import 'calculator_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
 const _qarzGreen = Color(0xFF27AE60);
 const _qarzRed = Color(0xFFE74C3C);
@@ -55,26 +57,17 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
   Color get _accent => widget.qarz.isQarzBerdim ? _qarzGreen : _qarzRed;
 
   String _grp(String s) {
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
     if (s.isEmpty) return s;
     final neg = s.startsWith('-');
     final body = neg ? s.substring(1) : s;
-    final parts = body.split('.');
-    final ip = parts[0];
-    final buf = StringBuffer();
-    for (int i = 0; i < ip.length; i++) {
-      if (i > 0 && (ip.length - i) % 3 == 0) buf.write(',');
-      buf.write(ip[i]);
-    }
-    final res = parts.length > 1
-        ? '${buf.toString()}.${parts[1]}'
-        : buf.toString();
+    final v = double.tryParse(body);
+    if (v == null) return s;
+    final res = appFmt(v, fmtKod);
     return neg ? '-$res' : res;
   }
 
-  String _numFmt(double v) {
-    if (v == v.truncateToDouble()) return _grp(v.toInt().toString());
-    return _grp(v.toStringAsFixed(2));
-  }
+  String _numFmt(double v) => appFmt(v, context.read<SozlamalarCubit>().state.formatKod);
 
   double? _liveResult(CalculatorState s) {
     if (s.operand == null || s.operator == null) return null;
@@ -102,7 +95,7 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
     final amount = double.tryParse(_calc.currentValue) ?? 0;
     if (_selectedHisob == null) return;
     if (amount <= 0) {
-      _snack('Summa kiriting');
+      _snack(context.l10n.summaKiriting);
       return;
     }
     final berdim = widget.qarz.isQarzBerdim;
@@ -182,7 +175,7 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
                 const SizedBox(height: 16),
 
                 // Hisoblar (tanlanadi) → trending strelka → qarz (fixed)
-                _hisobPicker(),
+                _hisobPicker(context),
                 const SizedBox(height: 6),
                 Icon(
                   widget.qarz.isQarzBerdim
@@ -218,12 +211,12 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
   }
 
   // ── Hisoblar (tanlanadigan, sirena bilan) ─────────────────────────────
-  Widget _hisobPicker() {
+  Widget _hisobPicker(BuildContext context) {
     if (widget.hisoblar.isEmpty) {
       return SizedBox(
         height: 60,
         child: Center(
-          child: Text('Hisob yo\'q', style: TextStyle(color: Colors.grey[500])),
+          child: Text(context.l10n.hisobYoq, style: TextStyle(color: Colors.grey[500])),
         ),
       );
     }
@@ -320,9 +313,9 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
                   color: Colors.white.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(5),
                 ),
-                child: const Text(
-                  'UZS',
-                  style: TextStyle(
+                child: Text(
+                  context.watch<SozlamalarCubit>().state.valyutaKod,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 8,
                     fontWeight: FontWeight.w700,
@@ -368,9 +361,9 @@ class _QarzTolovSheetState extends State<QarzTolovSheet>
                 color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Text(
-                'UZS',
-                style: TextStyle(
+              child: Text(
+                context.watch<SozlamalarCubit>().state.valyutaKod,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

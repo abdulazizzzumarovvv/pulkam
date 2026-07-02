@@ -21,13 +21,14 @@ class HisobModelAdapter extends TypeAdapter<HisobModel> {
       balance: fields[1] as String,
       iconCode: fields[2] as int,
       colorValue: fields[3] as int,
+      defaultKey: fields[4] as String? ?? '',
     );
   }
 
   @override
   void write(BinaryWriter writer, HisobModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class HisobModelAdapter extends TypeAdapter<HisobModel> {
       ..writeByte(2)
       ..write(obj.iconCode)
       ..writeByte(3)
-      ..write(obj.colorValue);
+      ..write(obj.colorValue)
+      ..writeByte(4)
+      ..write(obj.defaultKey);
   }
 
   @override

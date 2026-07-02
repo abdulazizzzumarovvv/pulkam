@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:pulkam/l10n.dart';
 
 part 'kategoriya_model.g.dart';
 
@@ -25,6 +26,9 @@ class KategoriyaModel extends HiveObject {
   @HiveField(5)
   final int hisobIndex;
 
+  @HiveField(6)
+  final String defaultKey;
+
   KategoriyaModel({
     required this.name,
     required this.iconCode,
@@ -32,10 +36,14 @@ class KategoriyaModel extends HiveObject {
     required this.turi,
     this.amount = '0',
     this.hisobIndex = -1,
+    this.defaultKey = '',
   });
 
   IconData get icon => IconData(iconCode, fontFamily: 'MaterialIcons');
   Color get color => Color(colorValue);
   KategoriyaTuri get kategoriyaTuri =>
       turi == 'kirim' ? KategoriyaTuri.kirim : KategoriyaTuri.chiqim;
+
+  String displayName(AppL10n l10n) =>
+      defaultKey.isNotEmpty ? l10n.defaultKatNom(defaultKey) : name;
 }

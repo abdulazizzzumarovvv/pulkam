@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/l10n.dart';
 import '../data/kategoriya_model.dart';
 import '../../hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar/hisoblar_tab/data/hisob_model.dart';
@@ -80,6 +81,7 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
         balance: newBalance.toStringAsFixed(2),
         iconCode: _selectedHisob!.iconCode,
         colorValue: _selectedHisob!.colorValue,
+        defaultKey: _selectedHisob!.defaultKey,
       ),
     );
 
@@ -210,7 +212,7 @@ class _OperatsiyaSheetState extends State<OperatsiyaSheet> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                widget.kategoriya.name,
+                                widget.kategoriya.displayName(context.l10n),
                                 style: const TextStyle(fontSize: 13),
                                 overflow: TextOverflow.ellipsis,
                               ),

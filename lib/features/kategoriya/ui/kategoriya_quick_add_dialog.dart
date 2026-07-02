@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/kategoriya_cubit.dart';
 import '../data/kategoriya_model.dart';
+import 'package:pulkam/l10n.dart';
 
 // ── icon_picker_screen.dart'dagi ikonlar (guruhlar bilan) ─────────────
 const _kIconGroups = <String, List<IconData>>{
-  'Umumiy': [
+  'umumiy': [
     Icons.star_outline,
     Icons.favorite_outline,
     Icons.home_outlined,
@@ -19,7 +20,7 @@ const _kIconGroups = <String, List<IconData>>{
     Icons.settings_outlined,
     Icons.notifications_outlined,
   ],
-  'Moliya': [
+  'moliya': [
     Icons.account_balance_wallet_outlined,
     Icons.credit_card_outlined,
     Icons.money,
@@ -31,7 +32,7 @@ const _kIconGroups = <String, List<IconData>>{
     Icons.trending_up,
     Icons.bar_chart,
   ],
-  'Oziq-ovqat': [
+  'oziq_ovqat': [
     Icons.restaurant_outlined,
     Icons.fastfood_outlined,
     Icons.coffee_outlined,
@@ -43,7 +44,7 @@ const _kIconGroups = <String, List<IconData>>{
     Icons.wine_bar_outlined,
     Icons.bakery_dining,
   ],
-  'Transport': [
+  'transport': [
     Icons.directions_car_outlined,
     Icons.flight_outlined,
     Icons.directions_bus_outlined,
@@ -55,7 +56,7 @@ const _kIconGroups = <String, List<IconData>>{
     Icons.directions_walk,
     Icons.local_shipping_outlined,
   ],
-  'Salomatlik': [
+  'salomatlik': [
     Icons.fitness_center_outlined,
     Icons.medical_services_outlined,
     Icons.local_hospital_outlined,
@@ -67,7 +68,7 @@ const _kIconGroups = <String, List<IconData>>{
     Icons.medication_outlined,
     Icons.psychology_outlined,
   ],
-  "Ta'lim": [
+  'talim': [
     Icons.school_outlined,
     Icons.menu_book_outlined,
     Icons.science_outlined,
@@ -125,18 +126,23 @@ Future<void> showKategoriyaQuickAddDialog(
 
 class _QuickAddDialog extends StatefulWidget {
   final KategoriyaCubit kategoriyaCubit;
-  final KategoriyaModel? editing; // null = yangi, non-null = tahrirlash
-  const _QuickAddDialog({required this.kategoriyaCubit, this.editing});
+  final KategoriyaModel? editing;
+  const _QuickAddDialog({
+    required this.kategoriyaCubit,
+    this.editing,
+  });
 
   @override
   State<_QuickAddDialog> createState() => _QuickAddDialogState();
 }
 
 class _QuickAddDialogState extends State<_QuickAddDialog> {
-  late final TextEditingController _nameCtrl;
+  TextEditingController? _nameCtrl;
   late IconData _icon;
   late Color _color;
   late String _turi;
+  bool _nameError = false;
+  bool _nameCtrlReady = false;
 
   bool get _isEditing => widget.editing != null;
 
@@ -145,15 +151,11 @@ class _QuickAddDialogState extends State<_QuickAddDialog> {
     super.initState();
     final e = widget.editing;
     if (e != null) {
-      // Tahrirlash: mavjud qiymatlarni olish
-      _nameCtrl = TextEditingController(text: e.name);
       _icon = e.icon;
       _color = e.color;
       _turi = e.turi;
     } else {
-      // Yangi: random rang va ikonka
       final rng = Random();
-      _nameCtrl = TextEditingController();
       _icon = _allIcons[rng.nextInt(_allIcons.length)];
       _color = _allColors[rng.nextInt(_allColors.length)];
       _turi = 'chiqim';
@@ -161,8 +163,24 @@ class _QuickAddDialogState extends State<_QuickAddDialog> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_nameCtrlReady) {
+      _nameCtrlReady = true;
+      final e = widget.editing;
+      final initialText = e != null ? e.displayName(context.l10n) : '';
+      _nameCtrl = TextEditingController(text: initialText);
+      _nameCtrl!.addListener(() {
+        if (_nameError && _nameCtrl!.text.trim().isNotEmpty) {
+          setState(() => _nameError = false);
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
-    _nameCtrl.dispose();
+    _nameCtrl?.dispose();
     super.dispose();
   }
 
@@ -175,14 +193,9 @@ class _QuickAddDialogState extends State<_QuickAddDialog> {
   }
 
   void _save() {
-    final name = _nameCtrl.text.trim();
+    final name = _nameCtrl?.text.trim() ?? '';
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nom kiriting'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      setState(() => _nameError = true);
       return;
     }
     final newKat = KategoriyaModel(
@@ -236,7 +249,7 @@ class _QuickAddDialogState extends State<_QuickAddDialog> {
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(children: [seg('Chiqim', 'chiqim'), seg('Kirim', 'kirim')]),
+      child: Row(children: [seg(context.l10n.chiqim, 'chiqim'), seg(context.l10n.kirim, 'kirim')]),
     );
   }
 
@@ -254,24 +267,24 @@ Widget _iconGrid() {
               children: [
                 Expanded(
                   child: Divider(
-                    color: Colors.grey[300],
+                    color: Colors.black12,
                     height: 1,
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 1),
                   child: Text(
-                    entry.key,
-                    style: TextStyle(
+                    context.l10n.ikonGuruh(entry.key),
+                    style: const TextStyle(
                       fontSize: 8,
-                      color: Colors.grey[400],
+                      color: Colors.black38,
                       height: 0.8,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Divider(
-                    color: Colors.grey[300],
+                    color: Colors.black12,
                     height: 1,
                   ),
                 ),
@@ -309,7 +322,7 @@ Widget _iconGrid() {
                     ),
                     child: Icon(
                       icon,
-                      color: sel ? _color : Colors.grey[500],
+                      color: sel ? _color : Colors.black45,
                       size: 20,
                     ),
                   ),
@@ -385,7 +398,9 @@ Widget _iconGrid() {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final screenH = MediaQuery.of(context).size.height;
+    const gridBg = Color(0xFFF0F0F0);
 
     return Stack(
       children: [
@@ -405,11 +420,14 @@ Widget _iconGrid() {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: 20,
-              vertical: screenH * 0.10, // kattaroq margin → kichikroq dialog
+              // xato chiqqanda dialog balandligi oshadi — margin shunga moslashadi
+              vertical: screenH * (_nameError ? 0.07 : 0.10),
             ),
             child: Material(
               color: Colors.transparent,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
@@ -423,15 +441,22 @@ Widget _iconGrid() {
                 ),
                 child: Column(
                   children: [
-                    // ── Header (zichroq) ───────────────────────────
-                    Padding(
+                    // ── Header — oq card ──────────────────────────
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(22),
+                          topRight: Radius.circular(22),
+                        ),
+                      ),
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
                       child: Column(
                         children: [
                           Text(
                             _isEditing
-                                ? 'Kategoriyani tahrirlash'
-                                : 'Yangi kategoriya',
+                                ? l10n.kategoriyaniTahrirlash
+                                : l10n.yangiKategoriya,
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -439,7 +464,6 @@ Widget _iconGrid() {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          // Preview dumaloq (kichikroq)
                           Container(
                             width: 58,
                             height: 58,
@@ -457,19 +481,26 @@ Widget _iconGrid() {
                             child: Icon(_icon, color: Colors.white, size: 28),
                           ),
                           const SizedBox(height: 10),
-                          // Nom inputi
                           TextField(
-                            controller: _nameCtrl,
+                            controller: _nameCtrl!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Kategoriya nomi',
+                              hintText: l10n.kategoriyaNomi,
                               hintStyle: TextStyle(
                                 color: Colors.grey[400],
                                 fontSize: 14,
+                              ),
+                              errorText: _nameError
+                                  ? 'Iltimos nomini kiriting'
+                                  : null,
+                              errorStyle: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFFE74C3C),
+                                fontWeight: FontWeight.w500,
                               ),
                               isDense: true,
                               contentPadding: const EdgeInsets.only(bottom: 6),
@@ -481,6 +512,18 @@ Widget _iconGrid() {
                               focusedBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(color: _color, width: 2),
                               ),
+                              errorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Color(0xFFE74C3C),
+                                  width: 1.5,
+                                ),
+                              ),
+                              focusedErrorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: Color(0xFFE74C3C),
+                                  width: 2,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -489,7 +532,10 @@ Widget _iconGrid() {
                       ),
                     ),
 
-                    const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                    Divider(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
 
                     // ── Ikonlar + Ranglar ─────────────────────────
                     Expanded(
@@ -501,7 +547,7 @@ Widget _iconGrid() {
                             Expanded(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[50],
+                                  color: gridBg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ClipRRect(
@@ -514,7 +560,7 @@ Widget _iconGrid() {
                             Expanded(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[50],
+                                  color: gridBg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ClipRRect(

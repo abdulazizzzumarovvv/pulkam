@@ -4,6 +4,7 @@ import 'package:pulkam/features/hisoblar/maqsadlar_tab/ui/maqsad_add.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/maqsad_cubit.dart';
 import 'package:pulkam/features/hisoblar/maqsadlar_tab/widgets/maqsad_actions_sheet.dart';
+import 'package:pulkam/l10n.dart';
 
 class MaqsadlarTab extends StatelessWidget {
   const MaqsadlarTab({super.key});
@@ -19,7 +20,7 @@ class MaqsadlarTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Maqsadlar'),
+                  Text(context.l10n.maqsadlar),
                   Text(
                     '${state.maqsadlar.fold(0.0, (sum, m) => sum + (double.tryParse(m.balance) ?? 0)).toStringAsFixed(0)} UZS',
                   ),
@@ -90,7 +91,7 @@ class MaqsadlarTab extends StatelessWidget {
                                                             .spaceBetween,
                                                     children: [
                                                       Text(
-                                                        maqsad.name,
+                                                        maqsad.displayName(context.l10n),
                                                         style: const TextStyle(
                                                         ),
                                                       ),
@@ -203,7 +204,7 @@ class MaqsadlarTab extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 15),
-                                      Center(child: Text('Maqsad qo\'shish')),
+                                      Center(child: Text(context.l10n.yangiMaqsad)),
                                     ],
                                   ),
                                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:pulkam/l10n.dart';
 
 part 'maqsad_model.g.dart';
 
@@ -26,6 +27,9 @@ class MaqsadModel extends HiveObject {
   @HiveField(6)
   final int completedAt; // bajarilgan sana (ms), 0 = bajarilmagan
 
+  @HiveField(7)
+  final String defaultKey;
+
   MaqsadModel({
     required this.name,
     required this.balance,
@@ -34,10 +38,14 @@ class MaqsadModel extends HiveObject {
     required this.colorValue,
     this.isCompleted = false,
     this.completedAt = 0,
+    this.defaultKey = '',
   });
 
   IconData get icon => IconData(iconCode, fontFamily: 'MaterialIcons');
   Color get color => Color(colorValue);
+
+  String displayName(AppL10n l10n) =>
+      defaultKey.isNotEmpty ? l10n.defaultHisobNom(defaultKey) : name;
 
   double get progress {
     final current = double.tryParse(balance) ?? 0;

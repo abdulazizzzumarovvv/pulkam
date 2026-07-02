@@ -4,6 +4,8 @@ library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import 'hisoblar_tab/data/hisob_model.dart';
 import 'maqsadlar_tab/data/maqsad_model.dart';
 import 'qarzlar_tab/data/qarz_model.dart';
@@ -84,16 +86,7 @@ const kOylar = [
 ];
 
 // ── Yordamchi funksiyalar ─────────────────────────────────────────────
-String hisobFmt(double v) {
-  final s = v.abs().toStringAsFixed(2);
-  final parts = s.split('.');
-  final buf = StringBuffer();
-  for (int i = 0; i < parts[0].length; i++) {
-    if (i > 0 && (parts[0].length - i) % 3 == 0) buf.write(',');
-    buf.write(parts[0][i]);
-  }
-  return '${buf.toString()}.${parts[1]}';
-}
+String hisobFmt(double v, String formatKod) => appFmt(v, formatKod);
 
 String hisobDate(int ms) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -192,21 +185,22 @@ class _HisobEmptyCardState extends State<HisobEmptyCard>
   }
 }
 
-// ── UZS badge ─────────────────────────────────────────────────────────
+// ── Valyuta badge ─────────────────────────────────────────────────────
 class HisobUzsBadge extends StatelessWidget {
   const HisobUzsBadge({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final kod = context.watch<SozlamalarCubit>().state.valyutaKod;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'UZS',
-        style: TextStyle(
+      child: Text(
+        kod,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w600,

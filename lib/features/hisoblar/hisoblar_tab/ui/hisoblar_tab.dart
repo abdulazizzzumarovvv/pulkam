@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/l10n.dart';
 import '../../hisoblar_shared.dart';
 import '../data/hisob_model.dart';
 import '../../widgets/calculator/kirim_chiqim_sheet.dart';
@@ -24,8 +26,8 @@ class HisobStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hisoblar.isEmpty) {
-      return const HisobEmptyCard(
-        message: 'Hisob mavjud emas',
+      return HisobEmptyCard(
+        message: context.l10n.hisobYoq,
         icon: Icons.account_balance_wallet_rounded,
       );
     }
@@ -81,10 +83,12 @@ class HisobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balance = double.tryParse(hisob.balance) ?? 0;
-    final formatted = hisobFmt(balance);
-    final dotIdx = formatted.indexOf('.');
-    final intPart = formatted.substring(0, dotIdx);
-    final decPart = formatted.substring(dotIdx);
+    final formatKod = context.read<SozlamalarCubit>().state.formatKod;
+    final formatted = hisobFmt(balance, formatKod);
+    final decSep = (formatKod == 'dot_comma' || formatKod == 'space_comma') ? ',' : '.';
+    final dotIdx = formatted.lastIndexOf(decSep);
+    final intPart = dotIdx >= 0 ? formatted.substring(0, dotIdx) : formatted;
+    final decPart = dotIdx >= 0 ? formatted.substring(dotIdx) : '';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -107,7 +111,7 @@ class HisobCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hisob.name,
+                  hisob.displayName(context.l10n),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -197,8 +201,8 @@ class HisobCard extends StatelessWidget {
     final others = allHisoblar.where((h) => h.key != hisob.key).toList();
     if (others.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("O'tkazish uchun boshqa hisob mavjud emas"),
+        SnackBar(
+          content: Text(context.l10n.boshqaHisobYoq),
         ),
       );
       return;

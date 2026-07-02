@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:pulkam/l10n.dart';
 import '../logic/qarz_cubit.dart';
 import '../data/qarz_model.dart';
 import 'qarz_add.dart';
@@ -8,19 +9,7 @@ import 'package:pulkam/features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import 'package:pulkam/features/hisoblar/widgets/calculator/calculator_sheet.dart';
 import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
 import 'package:pulkam/features/amallar/data/amal_model.dart';
-
-String _fmt(double v) {
-  final s = v.toStringAsFixed(2);
-  final parts = s.split('.');
-  final intPart = parts[0].replaceAll('-', '');
-  final sign = v < 0 ? '-' : '';
-  final buf = StringBuffer();
-  for (int i = 0; i < intPart.length; i++) {
-    if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-    buf.write(intPart[i]);
-  }
-  return '$sign${buf.toString()}.${parts[1]}';
-}
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 
 class QarzlarTab extends StatelessWidget {
   const QarzlarTab({super.key});
@@ -39,9 +28,9 @@ class QarzlarTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Qarzlar',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  Text('${_fmt(total)} UZS'),
+                  Text(context.l10n.qarzlar,
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('${appFmt(total, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}'),
                 ],
               ),
               const SizedBox(height: 8),
@@ -98,7 +87,7 @@ class QarzlarTab extends StatelessWidget {
                                           color: Colors.green, size: 22),
                                     ),
                                     const SizedBox(width: 12),
-                                    const Text("Qarz qo'shish"),
+                                    Text(context.l10n.yangiQarz),
                                   ],
                                 ),
                               ),
@@ -186,7 +175,7 @@ class _QarzCardState extends State<_QarzCard> {
                             Text(q.personName,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600)),
-                            Text('${_fmt(double.tryParse(q.amount) ?? 0)} UZS',
+                            Text('${appFmt(double.tryParse(q.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
                                 style:
                                     TextStyle(color: color, fontSize: 13)),
                           ],
@@ -224,22 +213,20 @@ class _QarzCardState extends State<_QarzCard> {
                   child: Column(
                     children: [
                       _DetailRow(
-                          label: 'Asosiy summa',
-                          value:
-                              '${_fmt(double.tryParse(q.amount) ?? 0)} UZS'),
+                          label: context.l10n.asosiySumma,
+                          value: '${appFmt(double.tryParse(q.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}'),
                       _DetailRow(
-                          label: "To'langan",
-                          value:
-                              '${_fmt(double.tryParse(q.paid) ?? 0)} UZS'),
+                          label: context.l10n.tolangan2,
+                          value: '${appFmt(double.tryParse(q.paid) ?? 0, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}'),
                       _DetailRow(
-                          label: 'Qolgan',
-                          value: '${_fmt(q.remaining)} UZS',
+                          label: context.l10n.qolgan,
+                          value: '${appFmt(q.remaining, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
                           valueColor: color),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
                         onPressed: _tolovQoshish,
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text("To'lov qo'shish"),
+                        label: Text(context.l10n.tolovQoshish),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
                           foregroundColor: color,
@@ -254,7 +241,7 @@ class _QarzCardState extends State<_QarzCard> {
                           context.read<QarzCubit>().deleteQarz(q);
                         },
                         icon: const Icon(Icons.delete_outline, size: 18),
-                        label: const Text("Qarzni o'chirish"),
+                        label: Text(context.l10n.ochirish),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
                           foregroundColor: Colors.red,
@@ -358,7 +345,7 @@ class _TolovSheetState extends State<_TolovSheet> {
                 borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 16),
-          Text("To'lov qo'shish — ${widget.qarz.personName}",
+          Text("${context.l10n.tolovQoshish} — ${widget.qarz.personName}",
               style: const TextStyle(
                   fontSize: 16, fontWeight: FontWeight.w600)),
           const SizedBox(height: 16),
@@ -375,7 +362,7 @@ class _TolovSheetState extends State<_TolovSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Summa'),
+                    Text(context.l10n.summaKiriting),
                     Text('$_amount UZS',
                         style: const TextStyle(color: Colors.grey)),
                   ],
@@ -423,7 +410,7 @@ class _TolovSheetState extends State<_TolovSheet> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Saqlash'),
+            child: Text(context.l10n.saqlash),
           ),
         ],
       ),

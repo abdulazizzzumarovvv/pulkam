@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../../hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar_tab/data/hisob_model.dart';
 import '../../../kategoriya/logic/kategoriya_cubit.dart';
@@ -9,6 +11,7 @@ import '../../../kategoriya/ui/kategoriya_quick_add_dialog.dart';
 import '../../../amallar/logic/amal_cubit.dart';
 import '../../../amallar/data/amal_model.dart';
 import 'calculator_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
 /// Kirim/chiqim kalkulyatorli sheet.
 /// Hisob kartasidagi ↕ yoki Home "+ Umumiy balans" tugmasidan ochiladi.
@@ -55,26 +58,17 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
 
   // ── raqam formatlash (mingliklarni ajratish) ──────────────────────────
   String _grp(String s) {
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
     if (s.isEmpty) return s;
     final neg = s.startsWith('-');
     final body = neg ? s.substring(1) : s;
-    final parts = body.split('.');
-    final ip = parts[0];
-    final buf = StringBuffer();
-    for (int i = 0; i < ip.length; i++) {
-      if (i > 0 && (ip.length - i) % 3 == 0) buf.write(',');
-      buf.write(ip[i]);
-    }
-    final res = parts.length > 1
-        ? '${buf.toString()}.${parts[1]}'
-        : buf.toString();
+    final v = double.tryParse(body);
+    if (v == null) return s;
+    final res = appFmt(v, fmtKod);
     return neg ? '-$res' : res;
   }
 
-  String _numFmt(double v) {
-    if (v == v.truncateToDouble()) return _grp(v.toInt().toString());
-    return _grp(v.toStringAsFixed(2));
-  }
+  String _numFmt(double v) => appFmt(v, context.read<SozlamalarCubit>().state.formatKod);
 
   double? _liveResult(CalculatorState s) {
     if (s.operand == null || s.operator == null) return null;
@@ -101,16 +95,16 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
   void _save() {
     final h = _selectedHisob;
     if (h == null) {
-      _snack('Hisob tanlang');
+      _snack(context.l10n.hisob);
       return;
     }
     final amount = double.tryParse(_calc.currentValue) ?? 0;
     if (_selectedKat == null) {
-      _snack('Kategoriya tanlang');
+      _snack(context.l10n.kategoriya);
       return;
     }
     if (amount <= 0) {
-      _snack('Summa kiriting');
+      _snack(context.l10n.summaKiriting);
       return;
     }
     final bal = double.tryParse(h.balance) ?? 0;
@@ -127,6 +121,7 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
         balance: newBal.toStringAsFixed(2),
         iconCode: h.iconCode,
         colorValue: h.colorValue,
+        defaultKey: h.defaultKey,
       ),
     );
     context.read<AmalCubit>().addAmal(
@@ -179,10 +174,7 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
               scrolledUnderElevation: 0,
               // Orqaga strelka
               leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.black87,
-                ),
+                icon: const Icon(CupertinoIcons.back),
                 onPressed: () => Navigator.pop(context),
               ),
               // Toggle + o'ng tomonda + iconcha
@@ -304,7 +296,7 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
         color: const Color(0xFFEFEFF1),
         borderRadius: BorderRadius.circular(30),
       ),
-      child: Row(children: [seg('Kirim', false), seg('Chiqim', true)]),
+      child: Row(children: [seg(context.l10n.kirim, false), seg(context.l10n.chiqim, true)]),
     );
   }
 
@@ -314,9 +306,23 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Text(
-            'Kategoriya yo\'q',
-            style: TextStyle(color: Colors.grey[500]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.category_outlined,
+                size: 34,
+                color: _accent.withValues(alpha: 0.55),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                context.l10n.hechNarsa,
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -419,7 +425,7 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        h.name,
+                        h.displayName(context.l10n),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -440,9 +446,9 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                               color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            child: const Text(
-                              'UZS',
-                              style: TextStyle(
+                            child: Text(
+                              context.watch<SozlamalarCubit>().state.valyutaKod,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 8,
                                 fontWeight: FontWeight.w700,
@@ -496,9 +502,9 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                 color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Text(
-                'UZS',
-                style: TextStyle(
+              child: Text(
+                context.watch<SozlamalarCubit>().state.valyutaKod,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -702,116 +708,117 @@ class _KatChipState extends State<_KatChip>
     super.dispose();
   }
 
+  // Mini edit/delete tugma — Material+InkWell bilan, kattaroq hit-area
+  Widget _miniButton({
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color,
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: Colors.black45,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 26,
+          height: 26,
+          child: Icon(icon, color: Colors.white, size: 14),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final k = widget.kat;
     final sel = widget.selected;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return SizedBox(
+      // Yon tomonlarda mini tugmalar uchun joy qoldirish
+      height: 82,
+      width: 82,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              // Mini edit icon (chap tomonda)
-              if (widget.shaking)
-                Positioned(
-                  left: -20,
-                  top: 7,
-                  child: InkWell(
-                    onTap: widget.onEdit,
-                    child: Container(
-                      width: 25,
-                      height: 25,
+          // Asosiy tap/long-press maydoni — o'rtada, iconcha va nom
+          Positioned(
+            top: 8,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              onLongPress: widget.onLongPress,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _shake,
+                    builder: (_, child) => Transform.translate(
+                      offset: Offset(widget.shaking ? _shake.value : 0, 0),
+                      child: child,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 100),
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6C3CE1),
+                        color: sel ? k.color : k.color.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                          ),
-                        ],
+                        border: sel
+                            ? Border.all(color: k.color, width: 2.5)
+                            : null,
                       ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        color: Colors.white,
-                        size: 15,
+                      child: Icon(
+                        k.icon,
+                        color: sel ? Colors.white : k.color,
+                        size: 24,
                       ),
                     ),
                   ),
-                ),
-
-              // Asosiy dumaloq (silkinish bilan)
-              AnimatedBuilder(
-                animation: _shake,
-                builder: (_, child) => Transform.translate(
-                  offset: Offset(widget.shaking ? _shake.value : 0, 0),
-                  child: child,
-                ),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 100),
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: sel ? k.color : k.color.withValues(alpha: 0.14),
-                    shape: BoxShape.circle,
-                    border: sel ? Border.all(color: k.color, width: 2.5) : null,
+                  const SizedBox(height: 6),
+                  Text(
+                    k.displayName(context.l10n),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                      color: sel ? Colors.black87 : Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  child: Icon(
-                    k.icon,
-                    color: sel ? Colors.white : k.color,
-                    size: 24,
-                  ),
-                ),
+                ],
               ),
-
-              // Mini delete icon (o'ng tomonda)
-              if (widget.shaking)
-                Positioned(
-                  right: -20,
-                  top: 7,
-                  child: InkWell(
-                    onTap: widget.onDelete,
-                    child: Container(
-                      width: 25,
-                      height: 25,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE74C3C),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white,
-                        size: 15,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            k.name,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-              color: sel ? Colors.black87 : Colors.grey[600],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
           ),
+
+          // Mini edit icon (chap tomonda, dumaloq markazi bilan bir balandlikda)
+          // dumaloq: top:8, height:52 → markaz = 8+26 = 34; tugma yarim balandligi 13 → 34-13=21
+          if (widget.shaking)
+            Positioned(
+              left: -4,
+              top: 21,
+              child: _miniButton(
+                color: const Color(0xFF6C3CE1),
+                icon: Icons.edit_rounded,
+                onTap: widget.onEdit,
+              ),
+            ),
+
+          // Mini delete icon (o'ng tomonda, dumaloq markazi bilan bir balandlikda)
+          if (widget.shaking)
+            Positioned(
+              right: -4,
+              top: 21,
+              child: _miniButton(
+                color: const Color(0xFFE74C3C),
+                icon: Icons.close_rounded,
+                onTap: widget.onDelete,
+              ),
+            ),
         ],
       ),
     );

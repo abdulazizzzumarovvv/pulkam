@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../../hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar_tab/data/hisob_model.dart';
 import '../../maqsadlar_tab/logic/maqsad_cubit.dart';
 import '../../maqsadlar_tab/data/maqsad_model.dart';
 import 'calculator_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
 /// Maqsad kartasidagi "+" tugma ochadigan kalkulyatorli to'ldirish sheeti.
 /// Hisob tanlanadi → summa kiritiladi → galochka bosilsa hisobdan maqsadga
@@ -45,26 +47,17 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
 
   // ── raqam formatlash ──────────────────────────────────────────────────
   String _grp(String s) {
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
     if (s.isEmpty) return s;
     final neg = s.startsWith('-');
     final body = neg ? s.substring(1) : s;
-    final parts = body.split('.');
-    final ip = parts[0];
-    final buf = StringBuffer();
-    for (int i = 0; i < ip.length; i++) {
-      if (i > 0 && (ip.length - i) % 3 == 0) buf.write(',');
-      buf.write(ip[i]);
-    }
-    final res = parts.length > 1
-        ? '${buf.toString()}.${parts[1]}'
-        : buf.toString();
+    final v = double.tryParse(body);
+    if (v == null) return s;
+    final res = appFmt(v, fmtKod);
     return neg ? '-$res' : res;
   }
 
-  String _numFmt(double v) {
-    if (v == v.truncateToDouble()) return _grp(v.toInt().toString());
-    return _grp(v.toStringAsFixed(2));
-  }
+  String _numFmt(double v) => appFmt(v, context.read<SozlamalarCubit>().state.formatKod);
 
   double? _liveResult(CalculatorState s) {
     if (s.operand == null || s.operator == null) return null;
@@ -91,11 +84,11 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
   void _save() {
     final amount = double.tryParse(_calc.currentValue) ?? 0;
     if (_selectedHisob == null) {
-      _snack('Hisob tanlang');
+      _snack(context.l10n.hisob);
       return;
     }
     if (amount <= 0) {
-      _snack('Summa kiriting');
+      _snack(context.l10n.summaKiriting);
       return;
     }
     final bal = double.tryParse(_selectedHisob!.balance) ?? 0;
@@ -113,6 +106,7 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
         balance: (bal - amount).toStringAsFixed(2),
         iconCode: _selectedHisob!.iconCode,
         colorValue: _selectedHisob!.colorValue,
+        defaultKey: _selectedHisob!.defaultKey,
       ),
     );
     // Maqsadga qo'shish
@@ -168,7 +162,7 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
                 const SizedBox(height: 16),
 
                 // Hisoblar (manba) → strelka → maqsad (manzil)
-                _hisobPicker(hisoblar),
+                _hisobPicker(context, hisoblar),
                 const SizedBox(height: 6),
                 Icon(Icons.arrow_downward_rounded, color: _accent, size: 24),
                 const SizedBox(height: 6),
@@ -187,12 +181,12 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
   }
 
   // ── Hisob tanlagich (mini kartalar) ───────────────────────────────────
-  Widget _hisobPicker(List<HisobModel> list) {
+  Widget _hisobPicker(BuildContext context, List<HisobModel> list) {
     if (list.isEmpty) {
       return SizedBox(
         height: 60,
         child: Center(
-          child: Text('Hisob yo\'q', style: TextStyle(color: Colors.grey[500])),
+          child: Text(context.l10n.hisobYoq, style: TextStyle(color: Colors.grey[500])),
         ),
       );
     }
@@ -228,7 +222,7 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
                 }
                 return _miniCard(
                   color: h.color,
-                  name: h.name,
+                  name: h.displayName(context.l10n),
                   balance: h.balance,
                   borderColor: border,
                   strong: selected,
@@ -245,7 +239,7 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
   Widget _maqsadTarget() {
     return _miniCard(
       color: widget.maqsad.color,
-      name: widget.maqsad.name,
+      name: widget.maqsad.displayName(context.l10n),
       balance: widget.maqsad.balance,
       borderColor: Colors.white,
       strong: true,
@@ -301,9 +295,9 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
                   color: Colors.white.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(5),
                 ),
-                child: const Text(
-                  'UZS',
-                  style: TextStyle(
+                child: Text(
+                  context.watch<SozlamalarCubit>().state.valyutaKod,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 8,
                     fontWeight: FontWeight.w700,
@@ -349,9 +343,9 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
                 color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Text(
-                'UZS',
-                style: TextStyle(
+              child: Text(
+                context.watch<SozlamalarCubit>().state.valyutaKod,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../../maqsadlar_tab/logic/maqsad_cubit.dart';
 import '../../maqsadlar_tab/data/maqsad_model.dart';
 import 'calculator_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
 /// Maqsaddan boshqa maqsadga pul o'tkazish — kalkulyatorli sheet.
 /// Tepada manba maqsad (fixed) → strelka → pastida boshqa maqsadlar (tanlanadi).
@@ -48,26 +50,17 @@ class _MaqsadTransferSheetState extends State<MaqsadTransferSheet>
   Color get _accent => widget.source.color;
 
   String _grp(String s) {
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
     if (s.isEmpty) return s;
     final neg = s.startsWith('-');
     final body = neg ? s.substring(1) : s;
-    final parts = body.split('.');
-    final ip = parts[0];
-    final buf = StringBuffer();
-    for (int i = 0; i < ip.length; i++) {
-      if (i > 0 && (ip.length - i) % 3 == 0) buf.write(',');
-      buf.write(ip[i]);
-    }
-    final res = parts.length > 1
-        ? '${buf.toString()}.${parts[1]}'
-        : buf.toString();
+    final v = double.tryParse(body);
+    if (v == null) return s;
+    final res = appFmt(v, fmtKod);
     return neg ? '-$res' : res;
   }
 
-  String _numFmt(double v) {
-    if (v == v.truncateToDouble()) return _grp(v.toInt().toString());
-    return _grp(v.toStringAsFixed(2));
-  }
+  String _numFmt(double v) => appFmt(v, context.read<SozlamalarCubit>().state.formatKod);
 
   double? _liveResult(CalculatorState s) {
     if (s.operand == null || s.operator == null) return null;
@@ -95,7 +88,7 @@ class _MaqsadTransferSheetState extends State<MaqsadTransferSheet>
     final amount = double.tryParse(_calc.currentValue) ?? 0;
     if (_selectedDest == null) return;
     if (amount <= 0) {
-      _snack('Summa kiriting');
+      _snack(context.l10n.summaKiriting);
       return;
     }
     final bal = double.tryParse(widget.source.balance) ?? 0;
@@ -296,9 +289,9 @@ class _MaqsadTransferSheetState extends State<MaqsadTransferSheet>
                   color: Colors.white.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(5),
                 ),
-                child: const Text(
-                  'UZS',
-                  style: TextStyle(
+                child: Text(
+                  context.watch<SozlamalarCubit>().state.valyutaKod,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 8,
                     fontWeight: FontWeight.w700,
@@ -344,9 +337,9 @@ class _MaqsadTransferSheetState extends State<MaqsadTransferSheet>
                 color: const Color(0xFF3A3A3C),
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: const Text(
-                'UZS',
-                style: TextStyle(
+              child: Text(
+                context.watch<SozlamalarCubit>().state.valyutaKod,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w700,

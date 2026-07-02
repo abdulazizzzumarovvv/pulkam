@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 
 /// Ikkiga bo'lingan konteyner: chap (qizil) = Chiqim, o'ng (yashil) = Kirim.
 /// Home va Statistika sahifalarida ishlatiladi.
@@ -10,21 +12,12 @@ class KirimChiqimBox extends StatelessWidget {
   static const _red = Color(0xFFE74C3C);
   static const _green = Color(0xFF27AE60);
 
-  String _fmt(double v) {
-    final s = v.abs().toStringAsFixed(2);
-    final parts = s.split('.');
-    final buf = StringBuffer();
-    for (int i = 0; i < parts[0].length; i++) {
-      if (i > 0 && (parts[0].length - i) % 3 == 0) buf.write(',');
-      buf.write(parts[0][i]);
-    }
-    return '${buf.toString()}.${parts[1]}';
-  }
-
   Widget _half({
     required Color color,
     required String label,
     required double value,
+    required String currencyCode,
+    required String formatKod,
   }) {
     return Container(
       color: color,
@@ -50,9 +43,9 @@ class KirimChiqimBox extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'UZS',
-                  style: TextStyle(
+                child: Text(
+                  currencyCode,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -65,7 +58,7 @@ class KirimChiqimBox extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    _fmt(value),
+                    appFmt(value, formatKod),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -84,6 +77,7 @@ class KirimChiqimBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<SozlamalarCubit>().state;
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: IntrinsicHeight(
@@ -91,10 +85,22 @@ class KirimChiqimBox extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: _half(color: _red, label: 'Chiqim', value: chiqim),
+              child: _half(
+                color: _red,
+                label: 'Chiqim',
+                value: chiqim,
+                currencyCode: state.valyutaKod,
+                formatKod: state.formatKod,
+              ),
             ),
             Expanded(
-              child: _half(color: _green, label: 'Kirim', value: kirim),
+              child: _half(
+                color: _green,
+                label: 'Kirim',
+                value: kirim,
+                currencyCode: state.valyutaKod,
+                formatKod: state.formatKod,
+              ),
             ),
           ],
         ),

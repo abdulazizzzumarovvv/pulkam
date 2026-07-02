@@ -15,12 +15,34 @@ class MaqsadCubit extends Cubit<MaqsadState> {
 
   Box<MaqsadModel> get _box => Hive.box<MaqsadModel>('maqsadlar');
 
+  static const _nameToKey = {
+    'Mening orzularim': 'orzular',
+  };
+
   void _load() {
     final list = _box.values.toList();
     if (list.isEmpty) {
       _addDefaults();
     } else {
-      emit(MaqsadState(list));
+      _migrateDefaultKeys();
+      emit(MaqsadState(_box.values.toList()));
+    }
+  }
+
+  Future<void> _migrateDefaultKeys() async {
+    for (final m in _box.values) {
+      if (m.defaultKey.isEmpty && _nameToKey.containsKey(m.name)) {
+        await _box.put(m.key, MaqsadModel(
+          name: m.name,
+          balance: m.balance,
+          target: m.target,
+          iconCode: m.iconCode,
+          colorValue: m.colorValue,
+          isCompleted: m.isCompleted,
+          completedAt: m.completedAt,
+          defaultKey: _nameToKey[m.name]!,
+        ));
+      }
     }
   }
 
@@ -31,6 +53,7 @@ class MaqsadCubit extends Cubit<MaqsadState> {
       target: '1000000',
       iconCode: Icons.auto_awesome.codePoint,
       colorValue: Colors.purple.toARGB32(),
+      defaultKey: 'orzular',
     ));
     emit(MaqsadState(_box.values.toList()));
   }

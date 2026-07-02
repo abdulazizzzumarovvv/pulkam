@@ -15,27 +15,57 @@ class KategoriyaCubit extends Cubit<KategoriyaState> {
 
   Box<KategoriyaModel> get _box => Hive.box<KategoriyaModel>('kategoriyalar');
 
+  static const _nameToKey = {
+    'Oziq-ovqat': 'oziq_ovqat',
+    'Kafe': 'kafe',
+    'Transport': 'transport',
+    'Salomatlik': 'salomatlik',
+    'Kiyim': 'kiyim',
+    'Oila': 'oila',
+    'Maosh': 'maosh',
+    'Biznes': 'biznes',
+    "Sovg'a": 'sovga',
+    'Freelance': 'freelance',
+  };
+
   void _load() {
     final list = _box.values.toList();
     if (list.isEmpty) {
       _addDefaults();
     } else {
-      emit(KategoriyaState(list));
+      _migrateDefaultKeys(list);
+      emit(KategoriyaState(_box.values.toList()));
+    }
+  }
+
+  Future<void> _migrateDefaultKeys(List<KategoriyaModel> list) async {
+    for (final k in list) {
+      if (k.defaultKey.isEmpty && _nameToKey.containsKey(k.name)) {
+        await _box.put(k.key, KategoriyaModel(
+          name: k.name,
+          iconCode: k.iconCode,
+          colorValue: k.colorValue,
+          turi: k.turi,
+          amount: k.amount,
+          hisobIndex: k.hisobIndex,
+          defaultKey: _nameToKey[k.name]!,
+        ));
+      }
     }
   }
 
   Future<void> _addDefaults() async {
     final defaults = [
-      KategoriyaModel(name: 'Oziq-ovqat', iconCode: Icons.restaurant_outlined.codePoint, colorValue: const Color(0xFF7C4DFF).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Kafe', iconCode: Icons.coffee_outlined.codePoint, colorValue: const Color(0xFFE91E63).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Transport', iconCode: Icons.directions_bus_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Salomatlik', iconCode: Icons.medical_services_outlined.codePoint, colorValue: const Color(0xFF00BFA5).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Kiyim', iconCode: Icons.checkroom_outlined.codePoint, colorValue: const Color(0xFFFF9100).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Oila', iconCode: Icons.people_outline.codePoint, colorValue: const Color(0xFFFF5252).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Maosh', iconCode: Icons.work_outline.codePoint, colorValue: const Color(0xFF00E676).toARGB32(), turi: 'kirim'),
-      KategoriyaModel(name: 'Biznes', iconCode: Icons.business_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'kirim'),
-      KategoriyaModel(name: "Sovg'a", iconCode: Icons.card_giftcard_outlined.codePoint, colorValue: const Color(0xFFFF4081).toARGB32(), turi: 'kirim'),
-      KategoriyaModel(name: 'Freelance', iconCode: Icons.laptop_outlined.codePoint, colorValue: const Color(0xFFFFAB00).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: 'Oziq-ovqat', defaultKey: 'oziq_ovqat', iconCode: Icons.restaurant_outlined.codePoint, colorValue: const Color(0xFF7C4DFF).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Kafe', defaultKey: 'kafe', iconCode: Icons.coffee_outlined.codePoint, colorValue: const Color(0xFFE91E63).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Transport', defaultKey: 'transport', iconCode: Icons.directions_bus_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Salomatlik', defaultKey: 'salomatlik', iconCode: Icons.medical_services_outlined.codePoint, colorValue: const Color(0xFF00BFA5).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Kiyim', defaultKey: 'kiyim', iconCode: Icons.checkroom_outlined.codePoint, colorValue: const Color(0xFFFF9100).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Oila', defaultKey: 'oila', iconCode: Icons.people_outline.codePoint, colorValue: const Color(0xFFFF5252).toARGB32(), turi: 'chiqim'),
+      KategoriyaModel(name: 'Maosh', defaultKey: 'maosh', iconCode: Icons.work_outline.codePoint, colorValue: const Color(0xFF00E676).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: 'Biznes', defaultKey: 'biznes', iconCode: Icons.business_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: "Sovg'a", defaultKey: 'sovga', iconCode: Icons.card_giftcard_outlined.codePoint, colorValue: const Color(0xFFFF4081).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: 'Freelance', defaultKey: 'freelance', iconCode: Icons.laptop_outlined.codePoint, colorValue: const Color(0xFFFFAB00).toARGB32(), turi: 'kirim'),
     ];
     for (final k in defaults) {
       await _box.add(k);

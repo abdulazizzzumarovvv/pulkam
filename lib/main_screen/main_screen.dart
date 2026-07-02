@@ -1,9 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/amallar/ui/amallar_screen.dart';
 import 'package:pulkam/features/hisoblar/hisoblar.dart';
 import 'package:pulkam/features/kategoriya/ui/kategoriya.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -49,9 +51,12 @@ class _MainScreenState extends State<MainScreen> {
           Hisoblar(),
         ],
       ),
-      bottomNavigationBar: _GlassPillNavBar(
-        selectedIndex: _index,
-        onTap: _onNavTap,
+      bottomNavigationBar: BlocBuilder<SozlamalarCubit, SozlamalarState>(
+        builder: (context, soz) => _GlassPillNavBar(
+          selectedIndex: _index,
+          onTap: _onNavTap,
+          accentColor: soz.mavzuRang,
+        ),
       ),
     );
   }
@@ -60,10 +65,12 @@ class _MainScreenState extends State<MainScreen> {
 class _GlassPillNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
+  final Color accentColor;
 
   const _GlassPillNavBar({
     required this.selectedIndex,
     required this.onTap,
+    required this.accentColor,
   });
 
   @override
@@ -87,35 +94,33 @@ class _GlassPillNavBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                // 1. KATEGORIYA
                 Expanded(
                   child: _NavIcon(
                     outlinedIcon: CupertinoIcons.chart_bar,
                     filledIcon: CupertinoIcons.chart_bar_fill,
                     isSelected: selectedIndex == 0,
                     onTap: () => onTap(0),
+                    accentColor: accentColor,
                   ),
                 ),
                 const SizedBox(width: 5),
-                
-                // 2. AMALLAR (ASOSIY)
                 Expanded(
                   child: _NavIcon(
                     outlinedIcon: CupertinoIcons.house,
                     filledIcon: CupertinoIcons.house_fill,
                     isSelected: selectedIndex == 1,
                     onTap: () => onTap(1),
+                    accentColor: accentColor,
                   ),
                 ),
                 const SizedBox(width: 5),
-                
-                // 3. HISOBLAR
                 Expanded(
                   child: _NavIcon(
                     outlinedIcon: CupertinoIcons.creditcard,
                     filledIcon: CupertinoIcons.creditcard_fill,
                     isSelected: selectedIndex == 2,
                     onTap: () => onTap(2),
+                    accentColor: accentColor,
                   ),
                 ),
               ],
@@ -132,32 +137,38 @@ class _NavIcon extends StatelessWidget {
   final IconData filledIcon;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color accentColor;
 
   const _NavIcon({
     required this.outlinedIcon,
     required this.filledIcon,
     required this.onTap,
     required this.isSelected,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Tanlangan pill background: mavzu rangidan biroz ochroq
+    final pillBg = Color.alphaBlend(
+      Colors.white.withValues(alpha: 0.18),
+      accentColor,
+    );
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected ? pillBg : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
         ),
         child: Center(
           child: Icon(
-            // Tanlangan bo'lsa filledIcon, aks holda outlinedIcon chiziladi
             isSelected ? filledIcon : outlinedIcon,
             size: 24,
             color: isSelected
-                ? Colors.black
+                ? Colors.white
                 : Colors.white.withValues(alpha: 0.45),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/maqsad_cubit.dart';
 import '../data/maqsad_model.dart';
 import 'package:pulkam/features/hisoblar/maqsadlar_tab/ui/maqsad_add.dart';
+import 'package:pulkam/l10n.dart';
 
 class MaqsadActionsSheet extends StatelessWidget {
   final MaqsadModel maqsad;
@@ -58,7 +59,7 @@ class MaqsadActionsSheet extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                maqsad.name,
+                                maqsad.displayName(context.l10n),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -168,7 +169,7 @@ class MaqsadActionsSheet extends StatelessWidget {
                       builder: (dialogContext) => AlertDialog(
                         title: const Text('O\'chirish'),
                         content: Text(
-                          '"${maqsad.name}" maqsadni o\'chirmoqchimisiz?',
+                          '"${maqsad.displayName(context.l10n)}" maqsadni o\'chirmoqchimisiz?',
                         ),
                         actions: [
                           TextButton(

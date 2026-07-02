@@ -22,15 +22,16 @@ class MaqsadModelAdapter extends TypeAdapter<MaqsadModel> {
       target: fields[2] as String,
       iconCode: fields[3] as int,
       colorValue: fields[4] as int,
-      isCompleted: fields[5] as bool,
-      completedAt: fields[6] == null ? 0 : fields[6] as int,
+      isCompleted: fields[5] as bool? ?? false,
+      completedAt: fields[6] as int? ?? 0,
+      defaultKey: fields[7] as String? ?? '',
     );
   }
 
   @override
   void write(BinaryWriter writer, MaqsadModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class MaqsadModelAdapter extends TypeAdapter<MaqsadModel> {
       ..writeByte(5)
       ..write(obj.isCompleted)
       ..writeByte(6)
-      ..write(obj.completedAt);
+      ..write(obj.completedAt)
+      ..writeByte(7)
+      ..write(obj.defaultKey);
   }
 
   @override

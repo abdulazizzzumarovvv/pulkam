@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../logic/hisob_cubit.dart';
 import '../data/hisob_model.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_tab/ui/hisob_add.dart';
+import 'package:pulkam/l10n.dart';
 
 class HisobActionsSheet extends StatelessWidget {
   final HisobModel hisob;
@@ -55,7 +56,7 @@ class HisobActionsSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        hisob.name,
+                        hisob.displayName(context.l10n),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
@@ -127,7 +128,7 @@ class HisobActionsSheet extends StatelessWidget {
                       builder: (dialogContext) => AlertDialog(
                         title: const Text('O\'chirish'),
                         content: Text(
-                          '"${hisob.name}" hisobni o\'chirmoqchimisiz?',
+                          '"${hisob.displayName(context.l10n)}" hisobni o\'chirmoqchimisiz?',
                         ),
                         actions: [
                           TextButton(

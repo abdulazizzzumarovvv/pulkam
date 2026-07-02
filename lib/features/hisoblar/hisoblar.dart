@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../amallar/logic/amal_cubit.dart';
 import '../amallar/data/amal_model.dart';
@@ -15,14 +16,15 @@ import 'widgets/calculator/maqsad_topup_sheet.dart';
 import 'widgets/calculator/maqsad_transfer_sheet.dart';
 import 'widgets/calculator/hisob_transfer_sheet.dart';
 import 'widgets/calculator/qarz_tolov_sheet.dart';
+import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/l10n.dart';
 
-const _kBg = Color(0xFF13111F);
 const double _btnSize = 52.0;
 const double _btnHalf = _btnSize / 2;
 const double _cardH = 168.0;
 const double _hisobGap = 48.0;
 
-const _tabTitles = ['Qarzlar', 'Hisoblar', 'Maqsadlar'];
+// tab titles are now dynamic — see _tabTitle(context, i) below
 const _qarzGreen = Color(0xFF27AE60);
 const _qarzRed = Color(0xFFE74C3C);
 
@@ -77,36 +79,11 @@ const _palette = <Color>[
   Color(0xFF263238),
 ];
 
-const _oylar = [
-  'Yan',
-  'Fev',
-  'Mar',
-  'Apr',
-  'May',
-  'Iyun',
-  'Iyul',
-  'Avg',
-  'Sen',
-  'Okt',
-  'Noy',
-  'Dek',
-];
-
-String _maqsadDate(int ms) {
+String _maqsadDate(int ms, AppL10n l10n) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
-  return '${d.day} ${_oylar[d.month - 1]} ${d.year}';
+  return '${d.day} ${l10n.oylarQisqa[d.month - 1]} ${d.year}';
 }
 
-String _fmt(double v) {
-  final s = v.abs().toStringAsFixed(2);
-  final parts = s.split('.');
-  final buf = StringBuffer();
-  for (int i = 0; i < parts[0].length; i++) {
-    if (i > 0 && (parts[0].length - i) % 3 == 0) buf.write(',');
-    buf.write(parts[0][i]);
-  }
-  return '${buf.toString()}.${parts[1]}';
-}
 
 // Height helpers — must match Stack calculations below.
 // Collapsed = bitta karta ko'rinadi (hammasi ustma-ust), expanded = barchasi ochiq.
@@ -192,6 +169,7 @@ class _HisoblarState extends State<Hisoblar> {
 
   @override
   Widget build(BuildContext context) {
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
     final hisoblar = context.watch<HisobCubit>().state.hisoblar;
     final allMaqsadlar = context.watch<MaqsadCubit>().state.maqsadlar;
     // Bajarilganlar asosiy carouseldan chiqib, arxivga o'tadi
@@ -217,9 +195,9 @@ class _HisoblarState extends State<Hisoblar> {
     final bool hideCarousel = adding && curEmpty;
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: kBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
@@ -262,7 +240,7 @@ class _HisoblarState extends State<Hisoblar> {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               child: Text(
-                _tabTitles[_tabIndex],
+                [context.l10n.qarzlar, context.l10n.hisoblar, context.l10n.maqsadlar][_tabIndex],
                 key: ValueKey(_tabIndex),
                 style: const TextStyle(
                   color: Colors.white,
@@ -447,8 +425,8 @@ class _CardStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hisoblar.isEmpty) {
-      return const _EmptyCard(
-        message: 'Hisob mavjud emas',
+      return _EmptyCard(
+        message: context.l10n.hisobYoq,
         icon: Icons.account_balance_wallet_rounded,
       );
     }
@@ -503,11 +481,14 @@ class _HisobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final balance = double.tryParse(hisob.balance) ?? 0;
-    final formatted = _fmt(balance);
-    final dotIdx = formatted.indexOf('.');
-    final intPart = formatted.substring(0, dotIdx);
-    final decPart = formatted.substring(dotIdx);
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
+    final formatted = appFmt(balance, fmtKod);
+    final decSep = (fmtKod == 'dot_comma' || fmtKod == 'space_comma') ? ',' : '.';
+    final dotIdx = formatted.lastIndexOf(decSep);
+    final intPart = dotIdx >= 0 ? formatted.substring(0, dotIdx) : formatted;
+    final decPart = dotIdx >= 0 ? formatted.substring(dotIdx) : '';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -530,7 +511,7 @@ class _HisobCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hisob.name,
+                  hisob.displayName(l10n),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -620,8 +601,8 @@ class _HisobCard extends StatelessWidget {
     final others = allHisoblar.where((h) => h.key != hisob.key).toList();
     if (others.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("O'tkazish uchun boshqa hisob mavjud emas"),
+        SnackBar(
+          content: Text(context.l10n.boshqaHisobYoq),
         ),
       );
       return;
@@ -653,8 +634,8 @@ class _MaqsadStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (maqsadlar.isEmpty) {
-      return const _EmptyCard(
-        message: 'Maqsad mavjud emas',
+      return _EmptyCard(
+        message: context.l10n.maqsadYoq,
         icon: Icons.emoji_events_rounded,
       );
     }
@@ -737,6 +718,8 @@ class _MaqsadCard extends StatelessWidget {
     int pct,
     String intPart,
     String decPart,
+    String currencyKod,
+    AppL10n l10n,
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
@@ -748,7 +731,7 @@ class _MaqsadCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  maqsad.name,
+                  maqsad.displayName(l10n),
                   style: TextStyle(
                     color: fg,
                     fontSize: 16,
@@ -780,7 +763,7 @@ class _MaqsadCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _badge('UZS', fg),
+              _badge(currencyKod, fg),
               const SizedBox(width: 8),
               Text(
                 intPart,
@@ -807,7 +790,7 @@ class _MaqsadCard extends StatelessWidget {
           if (done) ...[
             const SizedBox(height: 8),
             Text(
-              'MAQSAD BAJARILDI',
+              l10n.maqsadBajarildi,
               style: TextStyle(
                 color: fg,
                 fontSize: 12,
@@ -819,7 +802,7 @@ class _MaqsadCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  _maqsadDate(maqsad.completedAt),
+                  _maqsadDate(maqsad.completedAt, l10n),
                   style: TextStyle(
                     color: subFg,
                     fontSize: 11,
@@ -837,14 +820,18 @@ class _MaqsadCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balance = double.tryParse(maqsad.balance) ?? 0;
-    final balFmt = _fmt(balance);
-    final dotB = balFmt.indexOf('.');
-    final intPart = balFmt.substring(0, dotB);
-    final decPart = balFmt.substring(dotB);
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
+    final balFmt = appFmt(balance, fmtKod);
+    final decSepB = (fmtKod == 'dot_comma' || fmtKod == 'space_comma') ? ',' : '.';
+    final dotB = balFmt.lastIndexOf(decSepB);
+    final intPart = dotB >= 0 ? balFmt.substring(0, dotB) : balFmt;
+    final decPart = dotB >= 0 ? balFmt.substring(dotB) : '';
     final progress = maqsad.progress.clamp(0.0, 1.0);
     final done = progress >= 1.0;
     final pct = (progress * 100).toInt();
     final col = maqsad.color;
+    final currencyKod = context.watch<SozlamalarCubit>().state.valyutaKod;
+    final l10n = context.l10n;
 
     final card = Container(
       decoration: BoxDecoration(
@@ -872,6 +859,8 @@ class _MaqsadCard extends StatelessWidget {
                 pct,
                 intPart,
                 decPart,
+                currencyKod,
+                l10n,
               ),
             ),
             // Layer B — pastki to'lgan qism: rang foni + oq matn birga
@@ -890,6 +879,8 @@ class _MaqsadCard extends StatelessWidget {
                         pct,
                         intPart,
                         decPart,
+                        currencyKod,
+                        l10n,
                       ),
                     ),
                   ],
@@ -960,8 +951,8 @@ class _MaqsadCard extends StatelessWidget {
     final others = allMaqsadlar.where((m) => m.key != maqsad.key).toList();
     if (others.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("O'tkazish uchun boshqa maqsad mavjud emas"),
+        SnackBar(
+          content: Text(context.l10n.boshqaMaqsadYoq),
         ),
       );
       return;
@@ -1063,8 +1054,8 @@ class _QarzStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (qarzlar.isEmpty) {
-      return const _EmptyCard(
-        message: 'Qarz mavjud emas',
+      return _EmptyCard(
+        message: context.l10n.qarzYoq,
         icon: Icons.sentiment_satisfied_rounded,
       );
     }
@@ -1142,6 +1133,8 @@ class _QarzCard extends StatelessWidget {
     int pct,
     String intPart,
     String decPart,
+    String currencyKod,
+    AppL10n l10n,
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
@@ -1197,7 +1190,7 @@ class _QarzCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _badge('UZS', fg),
+                  _badge(currencyKod, fg),
                   const SizedBox(width: 8),
                   Text(
                     intPart,
@@ -1225,7 +1218,7 @@ class _QarzCard extends StatelessWidget {
               if (qarz.bajarilgan) ...[
                 const SizedBox(height: 8),
                 Text(
-                  qarz.isQarzBerdim ? 'QAYTARILDI' : "TO'LANGAN",
+                  qarz.isQarzBerdim ? l10n.qaytarildi : l10n.tolangan,
                   style: TextStyle(
                     color: fg,
                     fontSize: 12,
@@ -1236,7 +1229,7 @@ class _QarzCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
-                    _maqsadDate(qarz.bitganSana),
+                    _maqsadDate(qarz.bitganSana, l10n),
                     style: TextStyle(
                       color: subFg,
                       fontSize: 11,
@@ -1260,12 +1253,16 @@ class _QarzCard extends StatelessWidget {
     final shownVal = qarz.bajarilgan
         ? (double.tryParse(qarz.amount) ?? 0)
         : qarz.remaining;
-    final remFmt = _fmt(shownVal);
-    final dotB = remFmt.indexOf('.');
-    final intPart = remFmt.substring(0, dotB);
-    final decPart = remFmt.substring(dotB);
+    final fmtKod = context.read<SozlamalarCubit>().state.formatKod;
+    final remFmt = appFmt(shownVal, fmtKod);
+    final decSepQ = (fmtKod == 'dot_comma' || fmtKod == 'space_comma') ? ',' : '.';
+    final dotB = remFmt.lastIndexOf(decSepQ);
+    final intPart = dotB >= 0 ? remFmt.substring(0, dotB) : remFmt;
+    final decPart = dotB >= 0 ? remFmt.substring(dotB) : '';
     final progress = qarz.progress.clamp(0.0, 1.0);
     final pct = (progress * 100).toInt();
+    final currencyKod = context.watch<SozlamalarCubit>().state.valyutaKod;
+    final l10n = context.l10n;
 
     // Kartaning asosiy (yuqori) qismi — ikki tonli to'ldirish
     final coreStack = Stack(
@@ -1279,6 +1276,8 @@ class _QarzCard extends StatelessWidget {
             pct,
             intPart,
             decPart,
+            currencyKod,
+            l10n,
           ),
         ),
         // Layer B — to'langan qism: rang foni + oq matn
@@ -1296,6 +1295,8 @@ class _QarzCard extends StatelessWidget {
                     pct,
                     intPart,
                     decPart,
+                    currencyKod,
+                    l10n,
                   ),
                 ),
               ],
@@ -1383,7 +1384,7 @@ class _QarzCard extends StatelessWidget {
     if (hisoblar.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Avval hisob qo\'shing')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.hisobYoq)));
       return;
     }
     showModalBottomSheet(
@@ -1472,15 +1473,16 @@ class _EmptyCardState extends State<_EmptyCard>
 class _UzsBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final kod = context.watch<SozlamalarCubit>().state.valyutaKod;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'UZS',
-        style: TextStyle(
+      child: Text(
+        kod,
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -1548,7 +1550,6 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
   final _targetCtrl = TextEditingController(); // Maqsad create — maqsad puli
   late Color _color; // palitra orqali o'zgaradi
   late final bool _whiteCard; // Maqsad — oq fon
-  late final String _nameHint;
   bool _isQarzBerdim = false; // Qarz create — yo'nalish
   HisobModel? _selectedHisob; // Qarz create — tanlangan hisob
   late final AnimationController _flash; // qarz berishda mablag' yetmasa sirena
@@ -1574,21 +1575,18 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
             : null;
         _color = _isQarzBerdim ? _qarzGreen : _qarzRed;
         _whiteCard = false;
-        _nameHint = 'Ism';
       case 2:
         final m = item as MaqsadModel?;
         _nameCtrl = TextEditingController(text: m?.name ?? '');
         _amountCtrl = TextEditingController(text: m?.balance ?? '');
         _color = m?.color ?? _randomColor();
         _whiteCard = true;
-        _nameHint = 'Maqsad nomi';
       default:
         final h = item as HisobModel?;
         _nameCtrl = TextEditingController(text: h?.name ?? '');
         _amountCtrl = TextEditingController(text: h?.balance ?? '');
         _color = h?.color ?? _randomColor();
         _whiteCard = false;
-        _nameHint = 'Hisob nomi';
     }
   }
 
@@ -1741,6 +1739,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
               balance: amount,
               iconCode: h.iconCode,
               colorValue: _color.toARGB32(),
+              defaultKey: h.defaultKey,
             ),
           );
         }
@@ -1749,6 +1748,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
   }
 
   Widget _uzsBadge(Color fg) {
+    final kod = context.watch<SozlamalarCubit>().state.valyutaKod;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1756,7 +1756,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        'UZS',
+        kod,
         style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
@@ -1855,7 +1855,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
                     children: [
                       // Nom (tepada)
                       Text(
-                        h.name,
+                        h.displayName(ctx.l10n),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -1877,9 +1877,9 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
                               color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            child: const Text(
-                              'UZS',
-                              style: TextStyle(
+                            child: Text(
+                              context.watch<SozlamalarCubit>().state.valyutaKod,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 8,
                                 fontWeight: FontWeight.w700,
@@ -1889,7 +1889,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              _fmt(double.tryParse(h.balance) ?? 0),
+                              appFmt(double.tryParse(h.balance) ?? 0, context.read<SozlamalarCubit>().state.formatKod),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -1950,6 +1950,12 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
   @override
   Widget build(BuildContext context) {
     final fg = _whiteCard ? _color : Colors.white;
+    final l10n = context.l10n;
+    final nameHint = switch (widget.tab) {
+      0 => l10n.kimdan,
+      2 => l10n.maqsadNomi,
+      _ => l10n.hisobNomi,
+    };
 
     Widget amountRow(TextEditingController c, double size) {
       return Row(
@@ -2015,9 +2021,9 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
             if (_create && widget.tab == 0) ...[
               Row(
                 children: [
-                  Expanded(child: _dirPill('Berdim', true)),
+                  Expanded(child: _dirPill(l10n.berdim, true)),
                   const SizedBox(width: 10),
-                  Expanded(child: _dirPill('Oldim', false)),
+                  Expanded(child: _dirPill(l10n.oldim, false)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -2033,7 +2039,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
               ),
               decoration: InputDecoration(
                 isDense: true,
-                hintText: _nameHint,
+                hintText: nameHint,
                 hintStyle: TextStyle(color: fg.withValues(alpha: 0.5)),
                 contentPadding: const EdgeInsets.only(bottom: 6),
                 enabledBorder: _border(fg, 0.35),
@@ -2043,11 +2049,11 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
             const SizedBox(height: 18),
             // Maqsad create: Hozirgi balans (kichik) tepada + Maqsad puli (katta) pastda
             if (_create && widget.tab == 2) ...[
-              miniLabel('Hozirgi balans'),
+              miniLabel(l10n.boshlangichBalans),
               const SizedBox(height: 2),
               amountRow(_amountCtrl, 20),
               const SizedBox(height: 14),
-              miniLabel('Maqsad puli'),
+              miniLabel(l10n.maqsadSumma),
               const SizedBox(height: 2),
               amountRow(_targetCtrl, 30),
             ] else
@@ -2183,9 +2189,10 @@ class _DeleteOverlayCard extends StatelessWidget {
     // Delete kartasi har doim rangli (oq emas) — tugmalar oq glass bo'lib,
     // barcha tablarda bir xil ko'rinishi uchun.
     const fg = Colors.white;
+    final l10n = context.l10n;
     final message = tab == 2
-        ? "Rostan ham o'chirmoqchimisiz? Maqsadga erishmadingiz, taslim bo'lmang!"
-        : "Rostan ham o'chirmoqchimisiz? Umumiy balansingizga ta'sir qiladi.";
+        ? '${l10n.tasdiqOchirish} ${l10n.taslimBolma}'
+        : '${l10n.tasdiqOchirish} ${l10n.umumiyBalansaTasir}';
 
     return Material(
       color: Colors.transparent,
@@ -2269,23 +2276,10 @@ class _QarzHistorySheet extends StatelessWidget {
   final QarzModel qarz;
   const _QarzHistorySheet({required this.qarz});
 
-  String _dateFmt(int ms) {
+  String _dateFmt(BuildContext context, int ms) {
     final d = DateTime.fromMillisecondsSinceEpoch(ms);
     String two(int n) => n.toString().padLeft(2, '0');
-    const oylar = [
-      'Yan',
-      'Fev',
-      'Mar',
-      'Apr',
-      'May',
-      'Iyun',
-      'Iyul',
-      'Avg',
-      'Sen',
-      'Okt',
-      'Noy',
-      'Dek',
-    ];
+    final oylar = context.l10n.oylarQisqa;
     return '${d.day} ${oylar[d.month - 1]} ${d.year}, ${two(d.hour)}:${two(d.minute)}';
   }
 
@@ -2293,17 +2287,18 @@ class _QarzHistorySheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = qarz.isQarzBerdim ? _qarzGreen : _qarzRed;
     final berdim = qarz.isQarzBerdim;
+    final l10n = context.l10n;
 
     final entries = <_HistEntry>[
       _HistEntry(
-        label: berdim ? 'Qarz berildi' : 'Qarz olindi',
+        label: berdim ? l10n.berdim : l10n.oldim,
         amount: double.tryParse(qarz.amount) ?? 0,
         ts: qarz.timestamp,
         isInitial: true,
       ),
       ...qarz.tolovlar.map(
         (t) => _HistEntry(
-          label: berdim ? 'Qaytarildi' : "To'landi",
+          label: berdim ? l10n.qaytarildi : l10n.tolangan2,
           amount: double.tryParse(t.amount) ?? 0,
           ts: t.timestamp,
           isInitial: false,
@@ -2424,7 +2419,7 @@ class _QarzHistorySheet extends StatelessWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              _dateFmt(e.ts),
+                              _dateFmt(context, e.ts),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.75),
                                 fontSize: 12,
@@ -2434,7 +2429,7 @@ class _QarzHistorySheet extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${_fmt(e.amount)} UZS',
+                        '${appFmt(e.amount, context.read<SozlamalarCubit>().state.formatKod)} ${context.read<SozlamalarCubit>().state.valyutaKod}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
@@ -2459,16 +2454,21 @@ class BajarilganMaqsadlarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: kBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Bajarilgan maqsadlar',
-          style: TextStyle(
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          context.l10n.bajarilganMaqsadlar,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -2477,6 +2477,7 @@ class BajarilganMaqsadlarScreen extends StatelessWidget {
       ),
       body: BlocBuilder<MaqsadCubit, MaqsadState>(
         builder: (context, state) {
+          final l10n = context.l10n;
           final bajarilganlar =
               state.maqsadlar.where((m) => m.bajarilgan).toList()
                 ..sort((a, b) => b.completedAt.compareTo(a.completedAt));
@@ -2493,13 +2494,13 @@ class BajarilganMaqsadlarScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Hech qanday bajarilgan maqsadlar mavjud emas',
+                    l10n.bajarilganMaqsadYoq,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey[400], fontSize: 15),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "Maqsad sari Olg'a!!!",
+                  Text(
+                    l10n.maqsadgaOlga,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: _qarzGreen,
@@ -2543,16 +2544,21 @@ class BajarilganQarzlarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final kBg = context.watch<SozlamalarCubit>().state.mavzuRang;
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: _kBg,
+        backgroundColor: kBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Yopilgan qarzlar',
-          style: TextStyle(
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          context.l10n.yopilganQarzlar,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -2561,6 +2567,7 @@ class BajarilganQarzlarScreen extends StatelessWidget {
       ),
       body: BlocBuilder<QarzCubit, QarzState>(
         builder: (context, state) {
+          final l10n = context.l10n;
           final bitganlar = state.qarzlar.where((q) => q.bajarilgan).toList()
             ..sort((a, b) => b.bitganSana.compareTo(a.bitganSana));
 
@@ -2576,15 +2583,15 @@ class BajarilganQarzlarScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Hech qanday yopilgan qarz mavjud emas',
+                    l10n.yopilganQarzYoq,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey[400], fontSize: 15),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "Qarzsiz hayot — yengil hayot!",
+                  Text(
+                    l10n.qarzsizHayot,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: _qarzGreen,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

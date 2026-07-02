@@ -23,13 +23,14 @@ class KategoriyaModelAdapter extends TypeAdapter<KategoriyaModel> {
       turi: fields[3] as String,
       amount: fields[4] as String,
       hisobIndex: fields[5] as int,
+      defaultKey: fields[6] as String? ?? '',
     );
   }
 
   @override
   void write(BinaryWriter writer, KategoriyaModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class KategoriyaModelAdapter extends TypeAdapter<KategoriyaModel> {
       ..writeByte(4)
       ..write(obj.amount)
       ..writeByte(5)
-      ..write(obj.hisobIndex);
+      ..write(obj.hisobIndex)
+      ..writeByte(6)
+      ..write(obj.defaultKey);
   }
 
   @override
