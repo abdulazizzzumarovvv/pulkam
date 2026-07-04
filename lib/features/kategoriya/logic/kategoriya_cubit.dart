@@ -23,6 +23,8 @@ class KategoriyaCubit extends Cubit<KategoriyaState> {
     'Kiyim': 'kiyim',
     'Oila': 'oila',
     'Maosh': 'maosh',
+    'Oylik': 'oylik',
+    'Avans': 'avans',
     'Biznes': 'biznes',
     "Sovg'a": 'sovga',
     'Freelance': 'freelance',
@@ -62,9 +64,8 @@ class KategoriyaCubit extends Cubit<KategoriyaState> {
       KategoriyaModel(name: 'Salomatlik', defaultKey: 'salomatlik', iconCode: Icons.medical_services_outlined.codePoint, colorValue: const Color(0xFF00BFA5).toARGB32(), turi: 'chiqim'),
       KategoriyaModel(name: 'Kiyim', defaultKey: 'kiyim', iconCode: Icons.checkroom_outlined.codePoint, colorValue: const Color(0xFFFF9100).toARGB32(), turi: 'chiqim'),
       KategoriyaModel(name: 'Oila', defaultKey: 'oila', iconCode: Icons.people_outline.codePoint, colorValue: const Color(0xFFFF5252).toARGB32(), turi: 'chiqim'),
-      KategoriyaModel(name: 'Maosh', defaultKey: 'maosh', iconCode: Icons.work_outline.codePoint, colorValue: const Color(0xFF00E676).toARGB32(), turi: 'kirim'),
-      KategoriyaModel(name: 'Biznes', defaultKey: 'biznes', iconCode: Icons.business_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'kirim'),
-      KategoriyaModel(name: "Sovg'a", defaultKey: 'sovga', iconCode: Icons.card_giftcard_outlined.codePoint, colorValue: const Color(0xFFFF4081).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: 'Oylik', defaultKey: 'oylik', iconCode: Icons.work_outline.codePoint, colorValue: const Color(0xFF00E676).toARGB32(), turi: 'kirim'),
+      KategoriyaModel(name: 'Avans', defaultKey: 'avans', iconCode: Icons.payments_outlined.codePoint, colorValue: const Color(0xFF2979FF).toARGB32(), turi: 'kirim'),
       KategoriyaModel(name: 'Freelance', defaultKey: 'freelance', iconCode: Icons.laptop_outlined.codePoint, colorValue: const Color(0xFFFFAB00).toARGB32(), turi: 'kirim'),
     ];
     for (final k in defaults) {

@@ -21,6 +21,10 @@ import 'package:pulkam/features/ai_analiz/logic/ai_analiz_cubit.dart';
 import 'package:pulkam/features/profile/data/profile_model.dart';
 import 'package:pulkam/features/profile/logic/profile_cubit.dart';
 import 'package:pulkam/services/notification_service.dart';
+import 'package:pulkam/features/voice/ui/floating_mic_button.dart';
+
+// Floating mikrofon dialogi uchun global navigator
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class _HomeGate extends StatefulWidget {
   const _HomeGate();
@@ -109,6 +113,17 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'PulKam',
             debugShowCheckedModeBanner: false,
+            navigatorKey: appNavigatorKey,
+            // Floating mikrofon — barcha ekranlar ustида (Pro)
+            builder: (context, child) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: Stack(
+                children: [
+                  ?child,
+                  FloatingMicButton(navigatorKey: appNavigatorKey),
+                ],
+              ),
+            ),
             locale: locale,
             supportedLocales: kSupportedLocales,
             localizationsDelegates: const [

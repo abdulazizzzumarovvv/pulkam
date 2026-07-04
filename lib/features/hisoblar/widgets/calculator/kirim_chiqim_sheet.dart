@@ -8,6 +8,8 @@ import '../../hisoblar_tab/data/hisob_model.dart';
 import '../../../kategoriya/logic/kategoriya_cubit.dart';
 import '../../../kategoriya/data/kategoriya_model.dart';
 import '../../../kategoriya/ui/kategoriya_quick_add_dialog.dart';
+import 'package:pulkam/features/pro/ui/pro_page.dart';
+import 'package:pulkam/services/tutorial_service.dart';
 import '../../../amallar/logic/amal_cubit.dart';
 import '../../../amallar/data/amal_model.dart';
 import 'calculator_cubit.dart';
@@ -45,6 +47,23 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
       vsync: this,
       duration: const Duration(milliseconds: 14400),
     );
+    // Tutorial rejimi: kategoriya → karta → kalkulyator ko'rsatib, yopiladi
+    if (tutorialSheetRejimi) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _tutorialKorsat());
+    }
+  }
+
+  Future<void> _tutorialKorsat() async {
+    if (!mounted) return;
+    final l10n = context.l10n;
+    await showSheetTutorial(
+      context,
+      kategoriyaMatn: l10n.tutKategoriya,
+      kartaMatn: l10n.tutKarta,
+      kalkulyatorMatn: l10n.tutKalkulyator,
+    );
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -184,7 +203,17 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                   _toggle(),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: () => showKategoriyaQuickAddDialog(context),
+                    onTap: () {
+                      // Limit: chiqim 8 ta, kirim 4 ta — oshsa Pro sahifa
+                      final isPro =
+                          context.read<SozlamalarCubit>().state.isPro;
+                      final limit = _isChiqim ? 8 : 4;
+                      if (!isPro && kategoriyalar.length >= limit) {
+                        showProPage(context);
+                        return;
+                      }
+                      showKategoriyaQuickAddDialog(context);
+                    },
                     child: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
@@ -209,7 +238,10 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: _categoryGrid(context, kategoriyalar),
+                      child: Container(
+                        key: TutorialKeys.sheetKategoriya,
+                        child: _categoryGrid(context, kategoriyalar),
+                      ),
                     ),
                   ),
                   // Strelka + hisoblar + kalkulyator — hammasi fixed
@@ -230,11 +262,22 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                           ),
                         ),
                         const SizedBox(height: 6),
-                        _cardPicker(hisoblar),
+                        Container(
+                          key: TutorialKeys.sheetKarta,
+                          child: _cardPicker(hisoblar),
+                        ),
                         const SizedBox(height: 10),
-                        _display(state),
-                        const SizedBox(height: 8),
-                        _keypad(context, state),
+                        Container(
+                          key: TutorialKeys.sheetKalkulyator,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _display(state),
+                              const SizedBox(height: 8),
+                              _keypad(context, state),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -328,6 +371,17 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
       );
     }
 
+    // Pro cheklovi: bepul rejimda chiqimda 8 ta, kirimda 4 ta kategoriya
+    // faol, limitdan oshganlari kulrang PRO ko'rinishida — faqat o'chirish.
+    final isPro = context.watch<SozlamalarCubit>().state.isPro;
+    final freeLimit = _isChiqim ? 8 : 4;
+    final lockedKeys = <Object>{};
+    if (!isPro) {
+      for (var i = freeLimit; i < list.length; i++) {
+        lockedKeys.add(list[i].key);
+      }
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -340,13 +394,19 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
       itemCount: list.length,
       itemBuilder: (ctx, i) {
         final k = list[i];
-        final selected = _selectedKat?.key == k.key;
+        final locked = lockedKeys.contains(k.key);
+        final selected = !locked && _selectedKat?.key == k.key;
         final shaking = _shakingKatKey == k.key;
         return _KatChip(
           kat: k,
           selected: selected,
           shaking: shaking,
+          locked: locked,
           onTap: () {
+            if (locked) {
+              showProPage(context);
+              return;
+            }
             setState(() {
               _selectedKat = k;
               _shakingKatKey = null; // tap — edit rejimini yopadi
@@ -654,6 +714,7 @@ class _KatChip extends StatefulWidget {
   final KategoriyaModel kat;
   final bool selected;
   final bool shaking;
+  final bool locked; // Pro cheklovi: kulrang, tanlab bo'lmaydi
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final VoidCallback onEdit;
@@ -663,6 +724,7 @@ class _KatChip extends StatefulWidget {
     required this.kat,
     required this.selected,
     required this.shaking,
+    this.locked = false,
     required this.onTap,
     required this.onLongPress,
     required this.onEdit,
@@ -735,6 +797,7 @@ class _KatChipState extends State<_KatChip>
   Widget build(BuildContext context) {
     final k = widget.kat;
     final sel = widget.selected;
+    final locked = widget.locked;
 
     return SizedBox(
       // Yon tomonlarda mini tugmalar uchun joy qoldirish
@@ -765,7 +828,11 @@ class _KatChipState extends State<_KatChip>
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: sel ? k.color : k.color.withValues(alpha: 0.14),
+                        color: locked
+                            ? Colors.grey.withValues(alpha: 0.15)
+                            : sel
+                                ? k.color
+                                : k.color.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
                         border: sel
                             ? Border.all(color: k.color, width: 2.5)
@@ -773,7 +840,11 @@ class _KatChipState extends State<_KatChip>
                       ),
                       child: Icon(
                         k.icon,
-                        color: sel ? Colors.white : k.color,
+                        color: locked
+                            ? Colors.grey.withValues(alpha: 0.5)
+                            : sel
+                                ? Colors.white
+                                : k.color,
                         size: 24,
                       ),
                     ),
@@ -784,7 +855,11 @@ class _KatChipState extends State<_KatChip>
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-                      color: sel ? Colors.black87 : Colors.grey[600],
+                      color: locked
+                          ? Colors.grey[400]
+                          : sel
+                              ? Colors.black87
+                              : Colors.grey[600],
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -795,9 +870,36 @@ class _KatChipState extends State<_KatChip>
             ),
           ),
 
+          // PRO badge — locked kategoriya ustida
+          if (locked)
+            Positioned(
+              top: 2,
+              right: 6,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[600],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
           // Mini edit icon (chap tomonda, dumaloq markazi bilan bir balandlikda)
           // dumaloq: top:8, height:52 → markaz = 8+26 = 34; tugma yarim balandligi 13 → 34-13=21
-          if (widget.shaking)
+          // Locked kategoriyani tahrirlash mumkin emas — faqat o'chirish
+          if (widget.shaking && !locked)
             Positioned(
               left: -4,
               top: 21,

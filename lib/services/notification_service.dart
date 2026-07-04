@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 
@@ -6,7 +7,14 @@ final FlutterLocalNotificationsPlugin flnp = FlutterLocalNotificationsPlugin();
 
 Future<void> initNotifications() async {
   tz.initializeTimeZones();
-  tz.setLocalLocation(tz.UTC);
+  // Qurilmaning haqiqiy vaqt zonasi — aks holda eslatmalar UTC bo'yicha
+  // (Toshkentda 5 soat kech) tushadi
+  try {
+    final tzName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(tzName.identifier));
+  } catch (_) {
+    tz.setLocalLocation(tz.getLocation('Asia/Tashkent'));
+  }
 
   const android = AndroidInitializationSettings('@mipmap/ic_launcher');
   const ios = DarwinInitializationSettings(
@@ -48,17 +56,25 @@ const _notifDetails = NotificationDetails(
 );
 
 Future<void> scheduleDaily(int id, int hour, int minute, String title, String body) async {
-  await flnp.zonedSchedule(
-    id,
-    title,
-    body,
-    _nextInstanceOf(hour, minute),
-    _notifDetails,
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    matchDateTimeComponents: DateTimeComponents.time,
-    uiLocalNotificationDateInterpretation:
-        UILocalNotificationDateInterpretation.absoluteTime,
-  );
+  Future<void> qoy(AndroidScheduleMode mode) => flnp.zonedSchedule(
+        id,
+        title,
+        body,
+        _nextInstanceOf(hour, minute),
+        _notifDetails,
+        androidScheduleMode: mode,
+        matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+
+  try {
+    await qoy(AndroidScheduleMode.exactAllowWhileIdle);
+  } catch (_) {
+    // Android 12+ da exact alarm ruxsati berilmagan bo'lsa —
+    // taxminiy rejimda baribir ishlasin (bir necha daqiqa farq bilan)
+    await qoy(AndroidScheduleMode.inexactAllowWhileIdle);
+  }
 }
 
 Future<void> cancelNotification(int id) async {

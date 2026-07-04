@@ -67,6 +67,7 @@ class SozlamalarState {
   final String formatKod;
   final String pinValue;
   final String tilKod;
+  final bool isPro;
   final List<ReminderItem> reminders;
 
   const SozlamalarState({
@@ -77,6 +78,7 @@ class SozlamalarState {
     this.formatKod = 'comma_dot',
     this.pinValue = '',
     this.tilKod = '',
+    this.isPro = false,
     this.reminders = const [
       ReminderItem(enabled: false, hour: 9,  minute: 0),
       ReminderItem(enabled: false, hour: 14, minute: 0),
@@ -92,6 +94,7 @@ class SozlamalarState {
     String? formatKod,
     String? pinValue,
     String? tilKod,
+    bool? isPro,
     List<ReminderItem>? reminders,
   }) =>
       SozlamalarState(
@@ -102,6 +105,7 @@ class SozlamalarState {
         formatKod: formatKod ?? this.formatKod,
         pinValue: pinValue ?? this.pinValue,
         tilKod: tilKod ?? this.tilKod,
+        isPro: isPro ?? this.isPro,
         reminders: reminders ?? this.reminders,
       );
 }
@@ -115,6 +119,10 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
   static const _keyFormat = 'format_kod';
   static const _keyPinValue = 'pin_value';
   static const _keyTil = 'til_kod';
+  static const _keyPro = 'is_pro';
+  static const _keyProPlan = 'pro_plan'; // 'umrbod' | 'yillik' | 'oylik'
+  static const _keyProExpiry = 'pro_expiry'; // millis, umrbodda yo'q
+  static const keyProExpiredPending = 'pro_expired_pending';
   // reminder_N_enabled / reminder_N_hour / reminder_N_minute
   static String _rKey(int i, String f) => 'reminder_${i}_$f';
 
@@ -131,6 +139,19 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
     final format = box.get(_keyFormat) as String? ?? 'comma_dot';
     final pinVal = box.get(_keyPinValue) as String? ?? '';
     final til = box.get(_keyTil) as String? ?? '';
+    var pro = box.get(_keyPro) as bool? ?? false;
+    // Obuna muddati tugaganmi? (umrbodda expiry saqlanmaydi)
+    final expiry = box.get(_keyProExpiry) as int?;
+    if (pro &&
+        expiry != null &&
+        DateTime.now().millisecondsSinceEpoch > expiry) {
+      pro = false;
+      box.put(_keyPro, false);
+      box.delete(_keyProExpiry);
+      box.delete(_keyProPlan);
+      // Bir martalik "obuna tugadi" dialogi uchun belgi
+      box.put(keyProExpiredPending, true);
+    }
     final defaults = const SozlamalarState().reminders;
     final reminders = List.generate(3, (i) => ReminderItem(
       enabled: box.get(_rKey(i, 'enabled')) as bool? ?? defaults[i].enabled,
@@ -145,8 +166,33 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
       formatKod: format,
       pinValue: pinVal,
       tilKod: til,
+      isPro: pro,
       reminders: reminders,
     ));
+  }
+
+  void setPro(bool val) {
+    Hive.box(_boxName).put(_keyPro, val);
+    emit(state.copyWith(isPro: val));
+  }
+
+  /// Pro'ni tarif bo'yicha faollashtirish:
+  /// umrbod — muddatsiz, yillik — 365 kun, oylik — 30 kun.
+  void activatePro(String plan) {
+    final box = Hive.box(_boxName);
+    box.put(_keyPro, true);
+    box.put(_keyProPlan, plan);
+    switch (plan) {
+      case 'oylik':
+        box.put(_keyProExpiry,
+            DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch);
+      case 'yillik':
+        box.put(_keyProExpiry,
+            DateTime.now().add(const Duration(days: 365)).millisecondsSinceEpoch);
+      default: // umrbod
+        box.delete(_keyProExpiry);
+    }
+    emit(state.copyWith(isPro: true));
   }
 
   void setTil(String kod) {

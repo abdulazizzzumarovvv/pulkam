@@ -17,7 +17,9 @@ import 'widgets/calculator/maqsad_transfer_sheet.dart';
 import 'widgets/calculator/hisob_transfer_sheet.dart';
 import 'widgets/calculator/qarz_tolov_sheet.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/features/pro/ui/pro_page.dart';
 import 'package:pulkam/l10n.dart';
+import 'package:pulkam/services/tutorial_service.dart';
 
 const double _btnSize = 52.0;
 const double _btnHalf = _btnSize / 2;
@@ -136,20 +138,90 @@ class _HisoblarState extends State<Hisoblar> {
     _deleteItem = item;
   });
   void _endDelete() => setState(() => _deleteItem = null);
-  void _startAdd() => setState(() {
-    _editItem = null;
-    _addingTab = _tabIndex;
-  });
+  void _startAdd() {
+    // Pro cheklovi: maqsadlar (orzular) 5 ta, qarzlar 4 ta maksimum
+    final isPro = context.read<SozlamalarCubit>().state.isPro;
+    if (!isPro) {
+      if (_tabIndex == 2) {
+        final aktivMaqsadlar = context
+            .read<MaqsadCubit>()
+            .state
+            .maqsadlar
+            .where((m) => !m.bajarilgan)
+            .length;
+        if (aktivMaqsadlar >= 5) {
+          showProPage(context);
+          return;
+        }
+      } else if (_tabIndex == 0) {
+        final aktivQarzlar = context
+            .read<QarzCubit>()
+            .state
+            .qarzlar
+            .where((q) => !q.bajarilgan)
+            .length;
+        if (aktivQarzlar >= 4) {
+          showProPage(context);
+          return;
+        }
+      }
+    }
+    setState(() {
+      _editItem = null;
+      _addingTab = _tabIndex;
+    });
+  }
   void _endAdd() => setState(() => _addingTab = null);
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = PageController(viewportFraction: 0.88, initialPage: 1);
+
+    // Tutorial: qo'lcha bilan swipe ko'rsatib, tablarni namoyish qilish
+    tutorialTablarKorsat = () async {
+      if (!_tabCtrl.hasClients || !mounted) return;
+      Future<void> tabga(int i) => _tabCtrl.animateToPage(
+            i,
+            duration: const Duration(milliseconds: 550),
+            curve: Curves.easeInOut,
+          );
+
+      // Qo'lcha overlay — swipe harakatini ko'rsatadi
+      final qol = _SwipeHandController();
+      final entry = OverlayEntry(
+        builder: (_) => _SwipeHand(controller: qol),
+      );
+      Overlay.of(context, rootOverlay: true).insert(entry);
+
+      try {
+        // Avval qo'l animatsiyasi to'liq ko'rsatiladi, keyin swipe
+        // O'ngga swipe (qo'l chapdan o'ngga) → Qarzlar
+        await qol.korsat(ongga: true);
+        await Future.delayed(const Duration(milliseconds: 250));
+        await tabga(0);
+        await Future.delayed(const Duration(milliseconds: 1100));
+
+        // Chapga swipe (qo'l o'ngdan chapga) → Maqsadlar tomon
+        await qol.korsat(ongga: false);
+        await Future.delayed(const Duration(milliseconds: 250));
+        await tabga(2);
+        await Future.delayed(const Duration(milliseconds: 1100));
+
+        // Hisoblarga qaytish
+        await qol.korsat(ongga: true);
+        await Future.delayed(const Duration(milliseconds: 250));
+        await tabga(1);
+        await Future.delayed(const Duration(milliseconds: 400));
+      } finally {
+        entry.remove();
+      }
+    };
   }
 
   @override
   void dispose() {
+    tutorialTablarKorsat = null;
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -2619,6 +2691,90 @@ class BajarilganQarzlarScreen extends StatelessWidget {
                 ),
               );
             },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Tutorial: swipe qo'lchasi (qayerdan surish kerakligini ko'rsatadi) ─
+class _SwipeHandController {
+  _SwipeHandState? _state;
+  Future<void> korsat({required bool ongga}) async {
+    final s = _state;
+    if (s == null) return;
+    await s.oynat(ongga);
+  }
+}
+
+class _SwipeHand extends StatefulWidget {
+  final _SwipeHandController controller;
+  const _SwipeHand({required this.controller});
+
+  @override
+  State<_SwipeHand> createState() => _SwipeHandState();
+}
+
+class _SwipeHandState extends State<_SwipeHand>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+  bool _ongga = true;
+  bool _korinadi = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller._state = this;
+  }
+
+  @override
+  void dispose() {
+    widget.controller._state = null;
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> oynat(bool ongga) async {
+    if (!mounted) return;
+    setState(() {
+      _ongga = ongga;
+      _korinadi = true;
+    });
+    await _ctrl.forward(from: 0);
+    if (mounted) setState(() => _korinadi = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_korinadi) return const SizedBox.shrink();
+    final size = MediaQuery.of(context).size;
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, _) {
+          final t = Curves.easeInOut.transform(_ctrl.value);
+          final start = _ongga ? size.width * 0.22 : size.width * 0.78;
+          final end = _ongga ? size.width * 0.78 : size.width * 0.22;
+          final x = start + (end - start) * t;
+          // Boshida paydo bo'lib, oxirida so'nadi
+          final opacity = t < 0.15
+              ? t / 0.15
+              : (t > 0.85 ? (1 - t) / 0.15 : 1.0);
+          return Stack(
+            children: [
+              Positioned(
+                left: x - 26,
+                top: size.height * 0.38,
+                child: Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: const Text('👆', style: TextStyle(fontSize: 46)),
+                ),
+              ),
+            ],
           );
         },
       ),

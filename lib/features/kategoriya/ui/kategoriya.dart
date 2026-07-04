@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/features/pro/ui/pro_page.dart';
+import 'package:pulkam/features/ai_analiz/ui/ai_chat_screen.dart';
 import 'package:pulkam/l10n.dart';
 
 const _kSubtext = Color(0xFF8A88A0);
@@ -54,13 +56,75 @@ class Kategoriya extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            child: CircleAvatar(
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              child: Icon(
-                Icons.auto_awesome,
-                color: Colors.white.withValues(alpha: 0.35),
-                size: 20,
-              ),
+            child: Center(
+              child: Builder(builder: (context) {
+                final isPro =
+                    context.watch<SozlamalarCubit>().state.isPro;
+                return GestureDetector(
+                  onTap: isPro
+                      ? () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const AiChatScreen()),
+                          )
+                      : () => showProPage(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPro
+                          ? const Color(0xFFD4AF37).withValues(alpha: 0.15)
+                          : Colors.grey.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // AI analiz ikonasi (Pro bo'lmasa diagonal o'chirilgan)
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                color: isPro
+                                    ? const Color(0xFFD4AF37)
+                                    : Colors.grey.withValues(alpha: 0.4),
+                                size: 20,
+                              ),
+                              if (!isPro)
+                                CustomPaint(
+                                  size: const Size(20, 20),
+                                  painter: _DiagonalSlashPainter(
+                                    color:
+                                        Colors.grey.withValues(alpha: 0.55),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        // Pro: "AI chat", aks holda "PRO"
+                        Text(
+                          isPro ? 'AI chat' : 'PRO',
+                          style: TextStyle(
+                            color: isPro
+                                ? const Color(0xFFD4AF37)
+                                : Colors.grey.withValues(alpha: 0.55),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
         ],
@@ -378,12 +442,15 @@ class _StatsPage extends StatelessWidget {
     // Kategoriya bo'yicha yig'ish
     final Set<int> days = {};
     final Map<String, _CatAgg> cats = {};
+    final Map<int, double> daySums = {}; // kun -> summa
     double total = 0;
 
     for (final a in amallar) {
       final amt = double.tryParse(a.amount) ?? 0;
       total += amt;
-      days.add(DateTime.fromMillisecondsSinceEpoch(a.timestamp).day);
+      final day = DateTime.fromMillisecondsSinceEpoch(a.timestamp).day;
+      days.add(day);
+      daySums[day] = (daySums[day] ?? 0) + amt;
       final cur = cats[a.kategoriyaName];
       if (cur == null) {
         cats[a.kategoriyaName] = _CatAgg(
@@ -397,6 +464,15 @@ class _StatsPage extends StatelessWidget {
       }
     }
 
+    // Oyning barcha kunlari uchun summalar (bo'sh kunlar = 0)
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final dayBars = <({int day, double amount})>[];
+    for (int d = 1; d <= daysInMonth; d++) {
+      dayBars.add((day: d, amount: daySums[d] ?? 0));
+    }
+    final maxDay =
+        daySums.values.isEmpty ? 0.0 : daySums.values.reduce((a, b) => a > b ? a : b);
+
     final avgDaily = days.isEmpty ? 0.0 : total / days.length;
     final catList = cats.values.toList()
       ..sort((x, y) => y.amount.compareTo(x.amount));
@@ -406,12 +482,12 @@ class _StatsPage extends StatelessWidget {
 
     final accent = isChiqim ? _red : _green;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-      child: Column(
-        children: [
-          // ── Kunlik o'rtacha harajat/daromad ──────────────────────
-          Container(
+    return Column(
+      children: [
+        // ── Fixed top: kunlik o'rtacha ────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
@@ -420,19 +496,21 @@ class _StatsPage extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  l10n.kunlikOrtacha,
+                  isChiqim ? l10n.kunlikOrtachaChiqim : l10n.kunlikOrtachaKirim,
                   style: TextStyle(color: _kSubtext, fontSize: 14),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _UzsBadge(context),
+                    _uzsBadge(context),
                     const SizedBox(width: 8),
                     Text(
-                      appFmt(avgDaily, context.read<SozlamalarCubit>().state.formatKod),
+                      appFmt(avgDaily,
+                          context.read<SozlamalarCubit>().state.formatKod),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -445,52 +523,132 @@ class _StatsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+        ),
 
-          // ── Pie chart ─────────────────────────────────────────────
-          SizedBox(
-            height: 210,
-            width: 210,
-            child: Stack(
-              alignment: Alignment.center,
+        // ── Scroll: bar chart (tepada), keyin pie + kategoriyalar ─
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
               children: [
-                CustomPaint(
-                  size: const Size(210, 210),
-                  painter: _DonutPainter(segments: segments),
+                // Bar chart (kunlik dinamika) — gorizontal scroll
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 0, 12),
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Text(
+                          l10n.kunlikDinamika,
+                          style: TextStyle(color: _kSubtext, fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (maxDay == 0)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              l10n.malumotYoq,
+                              style: TextStyle(color: Colors.grey[500]),
+                            ),
+                          ),
+                        )
+                      else
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              for (final b in dayBars.where((b) => b.amount > 0))
+                                _DayBarColumn(
+                                  day: b.day,
+                                  month: month,
+                                  amount: b.amount,
+                                  maxValue: maxDay,
+                                  color: accent,
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _fmtShort(total),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+
+                // Pie chart + kategoriyalar
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 210,
+                        width: 210,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CustomPaint(
+                              size: const Size(210, 210),
+                              painter: _DonutPainter(segments: segments),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _fmtShort(total),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  context
+                                      .watch<SozlamalarCubit>()
+                                      .state
+                                      .valyutaKod,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      context.watch<SozlamalarCubit>().state.valyutaKod,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
+                      Divider(
+                        height: 24,
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
-                    ),
-                  ],
+                      ...catList.map(
+                        (c) => _CatTile(cat: c, total: total, accent: accent),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          // ── Kategoriya konteynerlari ───────────────────────────────
-          ...catList.map((c) => _CatTile(cat: c, total: total, accent: accent)),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _UzsBadge(BuildContext context) {
+  Widget _uzsBadge(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -504,6 +662,71 @@ class _StatsPage extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+// ── Kunlik vertikal ustun (tepada summa, tagida sana) ─────────────────
+class _DayBarColumn extends StatelessWidget {
+  final int day;
+  final DateTime month;
+  final double amount;
+  final double maxValue;
+  final Color color;
+  static const double _maxBarHeight = 130;
+
+  const _DayBarColumn({
+    required this.day,
+    required this.month,
+    required this.amount,
+    required this.maxValue,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final frac = maxValue > 0 ? (amount / maxValue).clamp(0.0, 1.0) : 0.0;
+    final barHeight = amount > 0 ? (frac * _maxBarHeight).clamp(6.0, _maxBarHeight) : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Summa (tepada)
+          Text(
+            _fmtShort(amount),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Ustun (tepasi pilled)
+          Container(
+            width: 26,
+            height: barHeight,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(13),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Sana (tagida)
+          Text(
+            '$day',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -666,4 +889,26 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter old) => true;
+}
+
+// ── Diagonal chiziq ("o'chirilgan" belgisi) ────────────────────────────
+class _DiagonalSlashPainter extends CustomPainter {
+  final Color color;
+  const _DiagonalSlashPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.15, size.height * 0.85),
+      Offset(size.width * 0.85, size.height * 0.15),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_DiagonalSlashPainter old) => old.color != color;
 }

@@ -8,6 +8,8 @@ import 'package:pulkam/features/malumotlar/ui/format_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/pin_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/til_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/reminder_dialog.dart';
+import 'package:pulkam/features/pro/ui/pro_page.dart';
+import 'package:pulkam/services/tutorial_service.dart';
 import 'package:pulkam/l10n.dart';
 
 class MalumotlarScreen extends StatelessWidget {
@@ -49,6 +51,39 @@ class MalumotlarScreen extends StatelessWidget {
                     color: textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // PRO pill — Pulkam so'zining o'ng tarafida, bosilsa Pro sahifa
+                GestureDetector(
+                  onTap: () => showProPage(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: state.isPro
+                          ? const LinearGradient(
+                              colors: [Color(0xFFF5D061), Color(0xFFD4AF37)],
+                            )
+                          : null,
+                      color: state.isPro
+                          ? null
+                          : Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      state.isPro ? 'PRO' : l10n.proOlish,
+                      style: TextStyle(
+                        color: state.isPro
+                            ? const Color(0xFF3E320A)
+                            : Colors.white.withValues(alpha: 0.9),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -162,7 +197,7 @@ class MalumotlarScreen extends StatelessWidget {
                       icon: Icons.info_outline_rounded,
                       iconBg: const Color(0xFF546E7A),
                       label: l10n.bizHaqimizda,
-                      onTap: () {},
+                      onTap: () => _showAboutDialog(context, cardColor),
                       textColor: textColor,
                       themeBg: bg,
                     ),
@@ -170,7 +205,14 @@ class MalumotlarScreen extends StatelessWidget {
                       icon: Icons.menu_book_rounded,
                       iconBg: const Color(0xFF00BCD4),
                       label: l10n.yoriqnoma,
-                      onTap: () {},
+                      onTap: () {
+                        // Settings'ni yopib turni qaytadan boshlash
+                        Navigator.pop(context);
+                        Future.delayed(
+                          const Duration(milliseconds: 400),
+                          () => tutorialQaytaBoshla?.call(),
+                        );
+                      },
                       textColor: textColor,
                       themeBg: bg,
                       showDivider: false,
@@ -193,12 +235,66 @@ class MalumotlarScreen extends StatelessWidget {
     );
   }
 
+  // ── Biz haqimizda: markazda mini icon + qisqa tavsif ─────────────────
+  void _showAboutDialog(BuildContext context, Color cardColor) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Mini icon — o'rtada
+              Image.asset(
+                'assets/icon/app_icon_transparent.png',
+                width: 64,
+                height: 64,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                dialogCtx.l10n.appName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${dialogCtx.l10n.appName} — ${dialogCtx.l10n.aboutMatn}',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 13.5,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'v1.0.0',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _tilNomi(String kod, AppL10n l10n) {
     switch (kod) {
       case 'uz': return "O'zbek";
       case 'ru': return 'Русский';
       case 'en': return 'English';
-      case 'zh': return '中文';
       default:   return l10n.defaultTil;
     }
   }
@@ -258,6 +354,18 @@ class _MavzuDialogState extends State<_MavzuDialog> {
     _ThemeOption('shinam_qora',    Color(0xFF111111)),
   ];
 
+  // PRO gradient mavzular — tanlansa gradientning quyuq bazaviy rangi qo'llanadi
+  static const List<_GradThemeOption> _gradThemes = [
+    _GradThemeOption('grad_kosmos',   [Color(0xFF0F0C29), Color(0xFF302B63)]),
+    _GradThemeOption('grad_shafaq',   [Color(0xFF1A0A1E), Color(0xFF6B2D5C)]),
+    _GradThemeOption('grad_okean',    [Color(0xFF051937), Color(0xFF004D7A)]),
+    _GradThemeOption('grad_aurora',   [Color(0xFF041B2D), Color(0xFF004E66)]),
+    _GradThemeOption('grad_lava',     [Color(0xFF200122), Color(0xFF6F0000)]),
+    _GradThemeOption('grad_tunola',   [Color(0xFF16121E), Color(0xFF432371)]),
+    _GradThemeOption('grad_binafsha', [Color(0xFF1D0B33), Color(0xFF4A1B6D)]),
+    _GradThemeOption('grad_izumrud',  [Color(0xFF04160F), Color(0xFF0B4F3A)]),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -305,70 +413,215 @@ class _MavzuDialogState extends State<_MavzuDialog> {
           ),
           const Divider(color: Colors.white12, height: 1),
 
-          // Grid
+          // Grid: oddiy mavzular + PRO gradient mavzular
           SizedBox(
             height: 400,
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            child: Builder(builder: (context) {
+              final isPro =
+                  context.watch<SozlamalarCubit>().state.isPro;
+              const gridDelegate =
+                  SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 14,
                 childAspectRatio: 0.8,
-              ),
-              itemCount: _themes.length,
-              itemBuilder: (_, i) {
-                final t = _themes[i];
-                final isSelected = t.color.toARGB32() == _selected.toARGB32();
-                return GestureDetector(
-                  onTap: () => setState(() => _selected = t.color),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        height: 46,
-                        width: 46,
-                        decoration: BoxDecoration(
-                          color: t.color,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.15),
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: t.color.withValues(alpha: 0.6),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                  )
-                                ]
-                              : null,
+              );
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                children: [
+                  // ── Oddiy mavzular ─────────────────────────────
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: gridDelegate,
+                    itemCount: _themes.length,
+                    itemBuilder: (_, i) {
+                      final t = _themes[i];
+                      final isSelected =
+                          t.color.toARGB32() == _selected.toARGB32();
+                      return GestureDetector(
+                        onTap: () => setState(() => _selected = t.color),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              height: 46,
+                              width: 46,
+                              decoration: BoxDecoration(
+                                color: t.color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white.withValues(alpha: 0.15),
+                                  width: isSelected ? 2.5 : 1,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: t.color
+                                              .withValues(alpha: 0.6),
+                                          blurRadius: 8,
+                                          spreadRadius: 1,
+                                        )
+                                      ]
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(Icons.check_rounded,
+                                      color: Colors.white, size: 20)
+                                  : null,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              context.l10n.mavzuNom(t.key),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color:
+                                    Colors.white.withValues(alpha: 0.65),
+                                fontSize: 9,
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: isSelected
-                            ? const Icon(Icons.check_rounded,
-                                color: Colors.white, size: 20)
-                            : null,
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        context.l10n.mavzuNom(t.key),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.65),
-                          fontSize: 9,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+
+                  // ── PRO mavzular sarlavhasi ────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 14, 0, 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            context.l10n.proMavzular,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Gradient mavzular ──────────────────────────
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: gridDelegate,
+                    itemCount: _gradThemes.length,
+                    itemBuilder: (_, i) {
+                      final g = _gradThemes[i];
+                      final locked = !isPro;
+                      final isSelected = !locked &&
+                          g.colors.first.toARGB32() ==
+                              _selected.toARGB32();
+                      return GestureDetector(
+                        onTap: () {
+                          if (locked) {
+                            showProPage(context);
+                            return;
+                          }
+                          setState(() => _selected = g.colors.first);
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  height: 46,
+                                  width: 46,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: g.colors,
+                                    ),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white
+                                              .withValues(alpha: 0.15),
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(Icons.check_rounded,
+                                          color: Colors.white, size: 20)
+                                      : null,
+                                ),
+                                // Locked: PRO badge ustida
+                                if (locked)
+                                  Positioned(
+                                    top: -4,
+                                    right: -8,
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[600],
+                                        borderRadius:
+                                            BorderRadius.circular(20),
+                                      ),
+                                      child: const Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 7,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              context.l10n.mavzuNom(g.key),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(
+                                    alpha: locked ? 0.35 : 0.65),
+                                fontSize: 9,
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            }),
           ),
 
           const Divider(color: Colors.white12, height: 1),
@@ -463,6 +716,13 @@ class _ThemeOption {
   final String key;
   final Color color;
   const _ThemeOption(this.key, this.color);
+}
+
+// PRO gradient mavzu — ikki rangli gradient, bazaviy rang = colors.first
+class _GradThemeOption {
+  final String key;
+  final List<Color> colors;
+  const _GradThemeOption(this.key, this.colors);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -495,7 +495,7 @@ Widget _iconGrid() {
                                 fontSize: 14,
                               ),
                               errorText: _nameError
-                                  ? 'Iltimos nomini kiriting'
+                                  ? l10n.iltimosNomKiriting
                                   : null,
                               errorStyle: const TextStyle(
                                 fontSize: 11,

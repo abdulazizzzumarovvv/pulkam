@@ -13,18 +13,13 @@ import 'package:pulkam/features/amallar/widgets/profile_dialog.dart';
 import 'package:pulkam/features/profile/logic/profile_cubit.dart';
 import 'dart:io';
 import 'package:pulkam/l10n.dart';
+import 'package:pulkam/services/tutorial_service.dart';
 
 const _kSubtext = Color(0xFF8A88A0);
 
 
 
-String _salomlashuv(AppL10n l10n) {
-  final hour = DateTime.now().hour;
-  if (hour < 6) return l10n.hayirliTun;
-  if (hour < 12) return l10n.hayirliTong;
-  if (hour < 18) return l10n.hayirliKun;
-  return l10n.hayirliKech;
-}
+String _salomlashuv(AppL10n l10n) => l10n.salom;
 
 // ── Asosiy ekran ─────────────────────────────────────────────────────
 class AmallarScreen extends StatelessWidget {
@@ -44,6 +39,7 @@ class AmallarScreen extends StatelessWidget {
         leading: Padding(
           padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
           child: GestureDetector(
+            key: TutorialKeys.avatar,
             onTap: () => showProfileDialog(context),
             child: BlocBuilder<ProfileCubit, ProfileState>(
               builder: (context, state) {
@@ -68,31 +64,18 @@ class AmallarScreen extends StatelessWidget {
         title: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
             final name = state.profile?.fullName ?? state.name;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${_salomlashuv(l10n)},',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                if (name != null && name.isNotEmpty)
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
+            final label = (name != null && name.isNotEmpty)
+                ? '${_salomlashuv(l10n)}, $name'
+                : _salomlashuv(l10n);
+            return Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             );
           },
         ),
@@ -101,6 +84,7 @@ class AmallarScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 20, top: 8, bottom: 8),
             child: GestureDetector(
+              key: TutorialKeys.settings,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const MalumotlarScreen()),
@@ -230,6 +214,7 @@ class AmallarScreen extends StatelessWidget {
 
                       // O'ng tomondagi SHISHA (Glass) effektli "+" tugmasi
                       InkWell(
+                        key: TutorialKeys.plus,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -331,25 +316,9 @@ class AmallarScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // 3. O'NG TARAF: Mikrofon — Pro versiya kulrang uslubida
-                            Container(
-                              width:
-                                  52, // Chap taraf bilan bir xil muvozanat kengligi
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.08),
-                                shape: BoxShape.rectangle,
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                              child: Icon(
-                                Icons.mic_rounded,
-                                color: Colors.grey.withValues(alpha: 0.4),
-                                size: 20,
-                              ),
-                            ),
+                            // 3. O'NG TARAF: chap bilan muvozanat uchun bo'sh joy
+                            // (mikrofon endi floating dumaloq tugmada)
+                            const SizedBox(width: 52),
                           ],
                         ),
                       ),

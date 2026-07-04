@@ -110,150 +110,160 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                // Oy tanlash
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                        onPressed: _prevMonth,
-                        icon: const Icon(Icons.chevron_left)),
-                    Text(_monthLabel(l10n),
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
-                    IconButton(
-                        onPressed: _nextMonth,
-                        icon: const Icon(Icons.chevron_right)),
+          body: Column(
+            children: [
+              // ── Scroll qilinadigan qism ─────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    children: [
+                      // Oy tanlash
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                              onPressed: _prevMonth,
+                              icon: const Icon(Icons.chevron_left)),
+                          Text(_monthLabel(l10n),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
+                          IconButton(
+                              onPressed: _nextMonth,
+                              icon: const Icon(Icons.chevron_right)),
+                        ],
+                      ),
+
+                      // Chiqim / Kirim toggle
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[200]!),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            _ToggleBtn(
+                              label: l10n.chiqim,
+                              amount: chiqimTotal,
+                              isSelected: _tanlangan == KategoriyaTuri.chiqim,
+                              color: Colors.red,
+                              onTap: () => setState(
+                                  () => _tanlangan = KategoriyaTuri.chiqim),
+                            ),
+                            _ToggleBtn(
+                              label: l10n.kirim,
+                              amount: kirimTotal,
+                              isSelected: _tanlangan == KategoriyaTuri.kirim,
+                              color: Colors.green,
+                              onTap: () => setState(
+                                  () => _tanlangan = KategoriyaTuri.kirim),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Donut chart + kategoriyalar — bitta konteyner
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              height: 200,
+                              child: total <= 0
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.monetization_on_outlined,
+                                              size: 48,
+                                              color: Colors.grey[400]),
+                                          const SizedBox(height: 8),
+                                          Text(l10n.malumotYoq,
+                                              style: TextStyle(
+                                                  color: Colors.grey[400])),
+                                        ],
+                                      ),
+                                    )
+                                  : CustomPaint(
+                                      painter: _DonutPainter(
+                                        sections: katList
+                                            .map((k) => _DonutSection(
+                                                  color: Color(k.colorValue),
+                                                  value: k.amount / total,
+                                                ))
+                                            .toList(),
+                                      ),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.monetization_on_outlined,
+                                                size: 32,
+                                                color: Colors.grey[400]),
+                                            Text(l10n.malumotYoq,
+                                                style: TextStyle(
+                                                    color: Colors.grey[400],
+                                                    fontSize: 12)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                            if (katList.isNotEmpty) ...[
+                              const Divider(height: 24),
+                              ...katList.map((k) => _KatRow(info: k, total: total)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Fixed: kunlik o'rtacha ──────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
                   ],
                 ),
-
-                // Chiqim / Kirim toggle
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey[200]!),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      _ToggleBtn(
-                        label: l10n.chiqim,
-                        amount: chiqimTotal,
-                        isSelected:
-                            _tanlangan == KategoriyaTuri.chiqim,
-                        color: Colors.red,
-                        onTap: () => setState(
-                            () => _tanlangan = KategoriyaTuri.chiqim),
-                      ),
-                      _ToggleBtn(
-                        label: l10n.kirim,
-                        amount: kirimTotal,
-                        isSelected:
-                            _tanlangan == KategoriyaTuri.kirim,
-                        color: Colors.green,
-                        onTap: () => setState(
-                            () => _tanlangan = KategoriyaTuri.kirim),
-                      ),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.ortachaXarajat,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    _AvgRow(
+                        icon: Icons.calendar_today,
+                        label: l10n.birKunda,
+                        value: avgDay),
+                    const Divider(height: 14),
+                    _AvgRow(
+                        icon: Icons.calendar_today,
+                        label: l10n.birHaftada,
+                        value: avgWeek),
+                  ],
                 ),
-                const SizedBox(height: 12),
-
-                // O'rtacha xarajat
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.ortachaXarajat,
-                          style: TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 12),
-                      _AvgRow(
-                          icon: Icons.calendar_today,
-                          label: l10n.birKunda,
-                          value: avgDay),
-                      const Divider(height: 16),
-                      _AvgRow(
-                          icon: Icons.calendar_today,
-                          label: l10n.birHaftada,
-                          value: avgWeek),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Donut chart
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height: 200,
-                        child: total <= 0
-                            ? Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.monetization_on_outlined,
-                                        size: 48,
-                                        color: Colors.grey[400]),
-                                    const SizedBox(height: 8),
-                                    Text(l10n.malumotYoq,
-                                        style: TextStyle(
-                                            color: Colors.grey[400])),
-                                  ],
-                                ),
-                              )
-                            : CustomPaint(
-                                painter: _DonutPainter(
-                                  sections: katList
-                                      .map((k) => _DonutSection(
-                                            color: Color(k.colorValue),
-                                            value: k.amount / total,
-                                          ))
-                                      .toList(),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.monetization_on_outlined,
-                                          size: 32,
-                                          color: Colors.grey[400]),
-                                      Text(l10n.malumotYoq,
-                                          style: TextStyle(
-                                              color: Colors.grey[400],
-                                              fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...katList.map(
-                        (k) => _KatRow(info: k, total: total),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

@@ -35,7 +35,6 @@ List<_TilItem> _buildTillar(AppL10n l10n) => [
       _TilItem('uz', "O'zbek", '🇺🇿'),
       _TilItem('ru', 'Русский', '🇷🇺'),
       _TilItem('en', 'English', '🇬🇧'),
-      _TilItem('zh', '中文', '🇨🇳'),
     ];
 
 class _TilDialog extends StatelessWidget {

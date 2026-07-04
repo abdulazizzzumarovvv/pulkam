@@ -13,8 +13,7 @@ const _kAccent = Color(0xFF6C3CE1);
 class _GlassIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  final bool accent;
-  const _GlassIconBtn({required this.icon, required this.onTap, this.accent = false});
+  const _GlassIconBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,25 +26,12 @@ class _GlassIconBtn extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: accent
-                  ? _kAccent.withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.12),
+              color: Colors.white.withValues(alpha: 0.12),
               shape: BoxShape.circle,
               border: Border.all(
-                color: accent
-                    ? _kAccent.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.25),
+                color: Colors.white.withValues(alpha: 0.25),
                 width: 1.5,
               ),
-              boxShadow: accent
-                  ? [
-                      BoxShadow(
-                        color: _kAccent.withValues(alpha: 0.4),
-                        blurRadius: 12,
-                        spreadRadius: 1,
-                      )
-                    ]
-                  : null,
             ),
             child: Icon(icon, color: Colors.white, size: 24),
           ),
@@ -249,13 +235,13 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                                 width: 24,
                                 height: 24,
                                 decoration: BoxDecoration(
-                                  color: _kAccent,
+                                  color: Colors.white,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: kBg, width: 2.5),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   CupertinoIcons.camera_fill,
-                                  color: Colors.white,
+                                  color: kBg,
                                   size: 12,
                                 ),
                               ),
@@ -298,7 +284,6 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                           _GlassIconBtn(
                             icon: Icons.check_rounded,
                             onTap: _save,
-                            accent: true,
                           ),
                         ],
                       ),
