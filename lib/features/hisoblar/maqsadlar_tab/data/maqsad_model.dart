@@ -30,6 +30,9 @@ class MaqsadModel extends HiveObject {
   @HiveField(7)
   final String defaultKey;
 
+  @HiveField(8)
+  final int deadline; // maqsad muddati (ms), 0 = belgilanmagan
+
   MaqsadModel({
     required this.name,
     required this.balance,
@@ -39,6 +42,7 @@ class MaqsadModel extends HiveObject {
     this.isCompleted = false,
     this.completedAt = 0,
     this.defaultKey = '',
+    this.deadline = 0,
   });
 
   IconData get icon => IconData(iconCode, fontFamily: 'MaterialIcons');

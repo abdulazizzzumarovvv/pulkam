@@ -53,18 +53,13 @@ class _MainScreenState extends State<MainScreen> {
         return;
       }
 
-      // Birinchi kirishda: Pro sahifasi → yopilgach tutorial turi
-      final korildi = box.get('pro_page_korildi') as bool? ?? false;
-      if (!korildi) {
-        box.put('pro_page_korildi', true);
-        await showProPage(context);
-        if (!mounted) return;
-        final tutorialKorildi =
-            box.get('tutorial_korildi') as bool? ?? false;
-        if (!tutorialKorildi) {
-          box.put('tutorial_korildi', true);
-          _turBoshla();
-        }
+      // Birinchi kirishda: to'g'ridan-to'g'ri tutorial turi
+      // (PRO sahifa hozircha ko'rsatilmaydi — Click integratsiyasigacha)
+      final tutorialKorildi =
+          box.get('tutorial_korildi') as bool? ?? false;
+      if (!tutorialKorildi) {
+        box.put('tutorial_korildi', true);
+        _turBoshla();
       }
     });
   }

@@ -25,13 +25,14 @@ class MaqsadModelAdapter extends TypeAdapter<MaqsadModel> {
       isCompleted: fields[5] as bool? ?? false,
       completedAt: fields[6] as int? ?? 0,
       defaultKey: fields[7] as String? ?? '',
+      deadline: fields[8] as int? ?? 0,
     );
   }
 
   @override
   void write(BinaryWriter writer, MaqsadModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class MaqsadModelAdapter extends TypeAdapter<MaqsadModel> {
       ..writeByte(6)
       ..write(obj.completedAt)
       ..writeByte(7)
-      ..write(obj.defaultKey);
+      ..write(obj.defaultKey)
+      ..writeByte(8)
+      ..write(obj.deadline);
   }
 
   @override

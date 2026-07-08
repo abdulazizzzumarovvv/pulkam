@@ -1,4 +1,4 @@
-package com.example.pulkam
+package uz.pulkam.app
 
 import io.flutter.embedding.android.FlutterActivity
 

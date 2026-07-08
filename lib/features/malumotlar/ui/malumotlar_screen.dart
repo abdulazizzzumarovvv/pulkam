@@ -74,7 +74,7 @@ class MalumotlarScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
-                      state.isPro ? 'PRO' : l10n.proOlish,
+                      state.isPro ? 'PRO' : l10n.comingSoon,
                       style: TextStyle(
                         color: state.isPro
                             ? const Color(0xFF3E320A)

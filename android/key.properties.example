@@ -1,0 +1,7 @@
+# Keystore yaratgandan keyin bu faylni "key.properties" deb nusxalab, to'ldiring.
+# BU FAYL GIT'GA KIRMAYDI (gitignore). Parollarni EHTIYOT qiling!
+
+storePassword=SIZNING_STORE_PAROLINGIZ
+keyPassword=SIZNING_KEY_PAROLINGIZ
+keyAlias=pulkam
+storeFile=../pulkam-release.jks

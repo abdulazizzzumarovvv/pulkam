@@ -2,8 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import '../../hisoblar_shared.dart' show kNumStyle;
 import '../../hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar_tab/data/hisob_model.dart';
+import '../../../amallar/logic/amal_cubit.dart';
+import '../../../amallar/data/amal_model.dart';
 import 'calculator_cubit.dart';
 import 'package:pulkam/l10n.dart';
 
@@ -101,6 +104,21 @@ class _HisobTransferSheetState extends State<HisobTransferSheet>
     cubit.updateBalance(widget.source, (bal - amount).toStringAsFixed(2));
     final destBal = double.tryParse(_selectedDest!.balance) ?? 0;
     cubit.updateBalance(_selectedDest!, (destBal + amount).toStringAsFixed(2));
+
+    // Amallar ro'yxatiga o'tkazma yozuvi — sariq dumaloq + strelkali icon.
+    // Neytral: statistika/umumiy balansga ta'sir qilmaydi (isTransfer=true).
+    context.read<AmalCubit>().addAmal(AmalModel(
+          // kategoriyaName = "manba → manzil" (karta nomlari)
+          kategoriyaName:
+              '${widget.source.displayName(context.l10n)} → ${_selectedDest!.displayName(context.l10n)}',
+          amount: amount.toStringAsFixed(2),
+          kategoriyaIconCode: Icons.swap_horiz_rounded.codePoint,
+          kategoriyaColorValue: 0xFFF5A623,
+          hisobName: widget.source.name,
+          isKirim: false,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+          isTransfer: true,
+        ));
     Navigator.pop(context);
   }
 
@@ -352,11 +370,7 @@ class _HisobTransferSheetState extends State<HisobTransferSheet>
                 fit: BoxFit.scaleDown,
                 child: Text(
                   big,
-                  style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
+                  style: kNumStyle(fontSize: 40, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A)),
                 ),
               ),
             ),

@@ -1,0 +1,195 @@
+/* PulKam — Play Market screenshot shabloni (1080×1920, qorong'i + oltin) */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1080px;
+  height: 1920px;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(130% 85% at 50% -12%, #1e2740 0%, #10131f 52%, #070911 100%);
+  color: #fff;
+  position: relative;
+}
+
+/* Oltin nur — telefon orqasidan */
+.glow {
+  position: absolute;
+  left: 50%;
+  top: 980px;
+  width: 900px;
+  height: 900px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle,
+    rgba(245, 208, 97, 0.22) 0%,
+    rgba(212, 175, 55, 0.10) 35%,
+    rgba(0, 0, 0, 0) 68%);
+  filter: blur(10px);
+  z-index: 0;
+}
+
+/* Nozik nuqtali to'r */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1.4px, transparent 1.4px);
+  background-size: 46px 46px;
+  z-index: 0;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 70%);
+}
+
+/* ── Sarlavha ─────────────────────────────────────────── */
+.headline {
+  position: relative;
+  z-index: 2;
+  padding: 120px 90px 0 90px;
+  text-align: center;
+}
+
+.kicker {
+  display: inline-block;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #F5D061;
+  padding: 10px 22px;
+  border: 1.5px solid rgba(245, 208, 97, 0.35);
+  border-radius: 100px;
+  background: rgba(245, 208, 97, 0.06);
+  margin-bottom: 34px;
+}
+
+.title {
+  font-size: 62px;
+  font-weight: 700;
+  line-height: 1.16;
+  letter-spacing: -1px;
+  color: #FFFFFF;
+}
+
+.title .g {
+  background: linear-gradient(100deg, #F5D061 0%, #E6B84A 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  margin-top: 26px;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Telefon mockup ───────────────────────────────────── */
+.phone-wrap {
+  position: absolute;
+  left: 50%;
+  top: 540px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.phone {
+  width: 520px;
+  height: 926px;
+  background: #0a0c13;
+  border-radius: 56px;
+  padding: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 40px 120px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 90px rgba(245, 208, 97, 0.12);
+}
+
+.phone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 44px;
+  display: block;
+}
+
+/* Notch — screenshotlar content-crop bo'lgani uchun o'chirilgan
+   (aks holda ekranning yuqori-markazidagi sarlavhani bekitadi) */
+
+/* ── Juft telefon (2 ta screenshot) ───────────────────── */
+.phone-wrap.dual {
+  bottom: auto;
+  top: 500px;
+  width: 760px;
+  height: 1080px;
+}
+
+.phone-wrap.dual .phone {
+  position: absolute;
+  width: 430px;
+  height: 764px;
+  border-radius: 44px;
+  padding: 11px;
+}
+
+.phone-wrap.dual .phone img { border-radius: 34px; }
+
+.phone-wrap.dual .phone.back {
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.phone-wrap.dual .phone.front {
+  top: 280px;
+  left: 330px;
+  z-index: 2;
+  box-shadow:
+    0 44px 130px rgba(0, 0, 0, 0.78),
+    0 0 0 2px rgba(255, 255, 255, 0.07) inset,
+    0 0 100px rgba(245, 208, 97, 0.18);
+}
+
+/* ── Pastki brend ─────────────────────────────────────── */
+.brand {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 4;
+}
+
+.brand img {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+
+.brand span {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+/* ── Motivatsion slayd (8) ────────────────────────────── */
+.motiv .headline { padding-top: 300px; }
+.motiv .title { font-size: 74px; line-height: 1.18; }
+.motiv .subtitle { font-size: 32px; margin-top: 44px; padding: 0 40px; }
+.motiv .crown {
+  font-size: 120px;
+  margin-bottom: 30px;
+  filter: drop-shadow(0 0 40px rgba(245, 208, 97, 0.6));
+}
+.motiv .phone-wrap { display: none; }
+.motiv .glow { top: 760px; }

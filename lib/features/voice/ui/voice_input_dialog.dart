@@ -206,7 +206,8 @@ class _VoiceDialogState extends State<_VoiceDialog>
       return;
     }
 
-    // Hisobni topish: aytilgan bo'lsa — o'sha, aks holda birinchisi
+    // Hisobni topish: aytilgan bo'lsa — o'sha,
+    // aks holda eng katta balansli hisob
     HisobModel? hisob;
     if (natija.hisobName != null) {
       hisob = hisoblar
@@ -214,7 +215,13 @@ class _VoiceDialogState extends State<_VoiceDialog>
               h.name.toLowerCase() == natija.hisobName!.toLowerCase())
           .firstOrNull;
     }
-    hisob ??= hisoblar.isNotEmpty ? hisoblar.first : null;
+    if (hisob == null && hisoblar.isNotEmpty) {
+      hisob = hisoblar.reduce((a, b) =>
+          (double.tryParse(a.balance) ?? 0) >=
+                  (double.tryParse(b.balance) ?? 0)
+              ? a
+              : b);
+    }
     if (hisob == null) {
       _yopVaKorsat(l10n.ovozXato, yoriqnoma: false);
       return;

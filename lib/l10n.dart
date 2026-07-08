@@ -308,6 +308,12 @@ class AppL10n {
         'ru': 'приложение, созданное Flutter-разработчиком в одиночку',
         'en': 'an app built by a solo Flutter developer',
       });
+  /// Maqsad muddati: "26 dekabr 2026 gacha"
+  String maqsadMuddat(String sana) => _t({
+        'uz': '$sana gacha',
+        'ru': 'до $sana',
+        'en': 'up to $sana',
+      });
   String get iltimosNomKiriting => _t({
         'uz': 'Iltimos nomini kiriting',
         'ru': 'Пожалуйста, введите название',
@@ -415,6 +421,21 @@ class AppL10n {
         'uz': "Hali amallar mavjud emas",
         'ru': 'Операций пока нет',
         'en': 'No transactions yet',
+      });
+  String get bugunAmallarYoq => _t({
+        'uz': 'Bugun amallar yo\'q',
+        'ru': 'Сегодня операций нет',
+        'en': 'No transactions today',
+      });
+  String get otkazma => _t({
+        'uz': 'O\'tkazma',
+        'ru': 'Перевод',
+        'en': 'Transfer',
+      });
+  String get comingSoon => _t({
+        'uz': 'Tez orada',
+        'ru': 'Скоро',
+        'en': 'Coming soon',
       });
   String get kirim => _t({
         'uz': 'Kirim',

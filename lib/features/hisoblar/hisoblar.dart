@@ -20,6 +20,7 @@ import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import 'package:pulkam/features/pro/ui/pro_page.dart';
 import 'package:pulkam/l10n.dart';
 import 'package:pulkam/services/tutorial_service.dart';
+import 'hisoblar_shared.dart' show kNumStyle;
 
 const double _btnSize = 52.0;
 const double _btnHalf = _btnSize / 2;
@@ -596,23 +597,26 @@ class _HisobCard extends StatelessWidget {
                   children: [
                     _UzsBadge(),
                     const SizedBox(width: 8),
-                    Text(
-                      intPart,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        height: 1,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 3, left: 2),
-                      child: Text(
-                        decPart,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(intPart, style: kNumStyle(fontSize: 32, fontWeight: FontWeight.bold, height: 1)),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 3, left: 2),
+                              child: Text(
+                                decPart,
+                                style: kNumStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -829,6 +833,8 @@ class _MaqsadCard extends StatelessWidget {
                     _badge('%', fg, fontSize: 10),
                   ],
                 ),
+              // Kalendar tugmasi uchun joy (Stack ustida chiziladi)
+              if (!done) const SizedBox(width: 34),
             ],
           ),
           const SizedBox(height: 10),
@@ -837,28 +843,54 @@ class _MaqsadCard extends StatelessWidget {
             children: [
               _badge(currencyKod, fg),
               const SizedBox(width: 8),
-              Text(
-                intPart,
-                style: TextStyle(
-                  color: fg,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  height: 1,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3, left: 2),
-                child: Text(
-                  decPart,
-                  style: TextStyle(
-                    color: subFg,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(intPart, style: kNumStyle(fontSize: 32, fontWeight: FontWeight.bold, color: fg, height: 1)),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 3, left: 2),
+                        child: Text(decPart, style: kNumStyle(fontSize: 18, fontWeight: FontWeight.w500, color: subFg)),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
+          // Muddat yozuvi: "26 dekabr 2026 gacha" — maqsad rangida,
+          // muddat o'tgan bo'lsa qizil chiziq bilan o'ralgan
+          if (!done && maqsad.deadline > 0) ...[
+            const SizedBox(height: 8),
+            Builder(builder: (context) {
+              final otgan = DateTime.now().millisecondsSinceEpoch >
+                  maqsad.deadline;
+              const qizil = Color(0xFFE74C3C);
+              return Container(
+                padding: otgan
+                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
+                    : EdgeInsets.zero,
+                decoration: otgan
+                    ? BoxDecoration(
+                        border: Border.all(color: qizil, width: 1.4),
+                        borderRadius: BorderRadius.circular(8),
+                      )
+                    : null,
+                child: Text(
+                  l10n.maqsadMuddat(
+                      _maqsadDate(maqsad.deadline, l10n)),
+                  style: TextStyle(
+                    color: otgan ? qizil : fg,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            }),
+          ],
           if (done) ...[
             const SizedBox(height: 8),
             Text(
@@ -961,6 +993,27 @@ class _MaqsadCard extends StatelessWidget {
             ),
             // Bajarilganda — yonib turadigan katta olov (faqat olov)
             if (done) const Positioned(right: 20, bottom: 44, child: _Flame()),
+            // Kalendar — o'ng tepada, maqsad muddatini belgilash
+            if (!done)
+              Positioned(
+                top: 12,
+                right: 14,
+                child: GestureDetector(
+                  onTap: () => _sanaTanla(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: col.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.calendar_month_rounded,
+                      color: col,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1008,6 +1061,45 @@ class _MaqsadCard extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  // ── Maqsad muddatini tanlash — kalendar maqsad rangida ──────────────
+  Future<void> _sanaTanla(BuildContext context) async {
+    final col = maqsad.color;
+    final now = DateTime.now();
+    final tanlangan = await showDatePicker(
+      context: context,
+      initialDate: maqsad.deadline > 0
+          ? DateTime.fromMillisecondsSinceEpoch(maqsad.deadline)
+          : now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 30),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.light(
+            primary: col,
+            onPrimary: Colors.white,
+            onSurface: Colors.black87,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+    if (tanlangan == null || !context.mounted) return;
+    context.read<MaqsadCubit>().updateMaqsad(
+          maqsad,
+          MaqsadModel(
+            name: maqsad.name,
+            balance: maqsad.balance,
+            target: maqsad.target,
+            iconCode: maqsad.iconCode,
+            colorValue: maqsad.colorValue,
+            isCompleted: maqsad.isCompleted,
+            completedAt: maqsad.completedAt,
+            defaultKey: maqsad.defaultKey,
+            deadline: tanlangan.millisecondsSinceEpoch,
+          ),
+        );
   }
 
   void _showTopUp(BuildContext context) {
@@ -1264,23 +1356,19 @@ class _QarzCard extends StatelessWidget {
                 children: [
                   _badge(currencyKod, fg),
                   const SizedBox(width: 8),
-                  Text(
-                    intPart,
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      height: 1,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3, left: 2),
-                    child: Text(
-                      decPart,
-                      style: TextStyle(
-                        color: subFg,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(intPart, style: kNumStyle(fontSize: 32, fontWeight: FontWeight.bold, color: fg, height: 1)),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 3, left: 2),
+                            child: Text(decPart, style: kNumStyle(fontSize: 18, fontWeight: FontWeight.w500, color: subFg)),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1651,6 +1739,7 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
         final m = item as MaqsadModel?;
         _nameCtrl = TextEditingController(text: m?.name ?? '');
         _amountCtrl = TextEditingController(text: m?.balance ?? '');
+        _targetCtrl.text = m?.target ?? ''; // edit'da maqsad puli ham
         _color = m?.color ?? _randomColor();
         _whiteCard = true;
       default:
@@ -1780,15 +1869,23 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
           );
         } else {
           final m = widget.item as MaqsadModel;
+          final tgt = double.tryParse(_targetCtrl.text.trim());
+          if (tgt == null || tgt <= 0) {
+            _err('Maqsad puli kiriting');
+            return;
+          }
           context.read<MaqsadCubit>().updateMaqsad(
             m,
             MaqsadModel(
               name: name,
               balance: amount,
-              target: m.target,
+              target: tgt.toStringAsFixed(2),
               iconCode: m.iconCode,
               colorValue: _color.toARGB32(),
               isCompleted: m.isCompleted,
+              completedAt: m.completedAt,
+              defaultKey: m.defaultKey,
+              deadline: m.deadline,
             ),
           );
         }
@@ -2119,8 +2216,8 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
               ),
             ),
             const SizedBox(height: 18),
-            // Maqsad create: Hozirgi balans (kichik) tepada + Maqsad puli (katta) pastda
-            if (_create && widget.tab == 2) ...[
+            // Maqsad (create ham, edit ham): Hozirgi balans + Maqsad puli
+            if (widget.tab == 2) ...[
               miniLabel(l10n.boshlangichBalans),
               const SizedBox(height: 2),
               amountRow(_amountCtrl, 20),

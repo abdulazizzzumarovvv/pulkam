@@ -127,7 +127,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         .read<AmalCubit>()
         .state
         .amallar
-        .where((a) => a.timestamp >= kun30)
+        .where((a) => !a.isTransfer && a.timestamp >= kun30)
         .toList();
     double kirim = 0, chiqim = 0;
     final katMap = <String, double>{};

@@ -50,7 +50,8 @@ class _AiAnalizScreenState extends State<AiAnalizScreen> {
       builder: (context, state) {
         final monthAmallar = state.amallar.where((a) {
           final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
-          return dt.year == _selectedMonth.year &&
+          return !a.isTransfer &&
+              dt.year == _selectedMonth.year &&
               dt.month == _selectedMonth.month;
         }).toList();
 

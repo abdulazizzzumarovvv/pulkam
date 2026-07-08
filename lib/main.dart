@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import 'package:pulkam/features/malumotlar/ui/pin_dialog.dart';
 import 'package:pulkam/l10n.dart';
@@ -22,6 +23,7 @@ import 'package:pulkam/features/profile/data/profile_model.dart';
 import 'package:pulkam/features/profile/logic/profile_cubit.dart';
 import 'package:pulkam/services/notification_service.dart';
 import 'package:pulkam/features/voice/ui/floating_mic_button.dart';
+// appQulflangan uchun ham shu import ishlatiladi
 
 // Floating mikrofon dialogi uchun global navigator
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -47,7 +49,13 @@ class _HomeGateState extends State<_HomeGate> {
       _unlocked = !needsPin;
     }
 
-    if (!needsPin || _unlocked) return const MainScreen();
+    final qulflangan = needsPin && !_unlocked;
+    // Qulf ekranida floating mikrofon ko'rinmasin
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appQulflangan.value = qulflangan;
+    });
+
+    if (!qulflangan) return const MainScreen();
     return PinLockScreen(onUnlocked: () => setState(() => _unlocked = true));
   }
 }
@@ -147,6 +155,7 @@ class MyApp extends StatelessWidget {
                 brightness: Brightness.light,
                 surface: const Color(0xFFF5F0FF),
               ),
+              textTheme: GoogleFonts.spaceGroteskTextTheme(),
               scaffoldBackgroundColor: bgColor,
               appBarTheme: AppBarTheme(
                 backgroundColor: bgColor,

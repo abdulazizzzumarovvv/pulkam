@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pulkam/features/hisoblar/hisoblar_shared.dart' show kNumStyle;
 import 'package:pulkam/features/malumotlar/ui/malumotlar_screen.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import '../logic/amal_cubit.dart';
@@ -180,12 +181,7 @@ class AmallarScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     parts[0],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 38,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1,
-                                    ),
+                                    style: kNumStyle(fontSize: 38, fontWeight: FontWeight.bold, height: 1),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.only(
@@ -194,12 +190,10 @@ class AmallarScreen extends StatelessWidget {
                                     ),
                                     child: Text(
                                       '$decSep${parts[1]}',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                      style: kNumStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.w500,
+                                        color: Colors.white.withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ),
@@ -322,12 +316,17 @@ class AmallarScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Flat list
+                      // Flat list — faqat bugungi amallar
                       Expanded(
                         child: BlocBuilder<AmalCubit, AmalState>(
                           builder: (context, state) {
-                            final amallar = state.amallar;
-                            if (amallar.isEmpty) {
+                            final now = DateTime.now();
+                            final bugungiAmallar = state.amallar.where((a) {
+                              final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
+                              return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+                            }).toList();
+
+                            if (bugungiAmallar.isEmpty) {
                               return Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -339,7 +338,7 @@ class AmallarScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 14),
                                     Text(
-                                      l10n.haliAmallarYoq,
+                                      l10n.bugunAmallarYoq,
                                       style: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 15,
@@ -351,13 +350,13 @@ class AmallarScreen extends StatelessWidget {
                             }
                             return ListView.separated(
                               padding: const EdgeInsets.fromLTRB(0, 4, 0, 120),
-                              itemCount: amallar.length,
+                              itemCount: bugungiAmallar.length,
                               separatorBuilder: (ctx, i) => Divider(
                                 height: 1,
                                 indent: 72,
                                 color: Colors.grey[100],
                               ),
-                              itemBuilder: (_, i) => _AmalRow(amal: amallar[i]),
+                              itemBuilder: (_, i) => _AmalRow(amal: bugungiAmallar[i]),
                             );
                           },
                         ),
@@ -594,12 +593,7 @@ class _ExpandableDayState extends State<_ExpandableDay> {
                   width: 48,
                   child: Text(
                     widget.date.day.toString(),
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[900],
-                      height: 1,
-                    ),
+                    style: kNumStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.grey[900]!, height: 1),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -682,6 +676,11 @@ class _AmalRowState extends State<_AmalRow> {
   // Amalni o'chirib, hisob balansini qaytaradi (action reverse)
   void _deleteAndReverse() {
     final amal = widget.amal;
+    // O'tkazma — faqat yozuv, balansni qaytarmaydi (ichki ko'chirish edi)
+    if (amal.isTransfer) {
+      context.read<AmalCubit>().deleteAmal(amal);
+      return;
+    }
     final amt = double.tryParse(amal.amount) ?? 0;
     final hisobCubit = context.read<HisobCubit>();
     final matches = hisobCubit.state.hisoblar.where(
@@ -730,25 +729,41 @@ class _AmalRowState extends State<_AmalRow> {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                context.l10n.defaultKatNom(amal.kategoriyaName),
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[900],
-                  fontSize: 16,
-                ),
-              ),
+              child: amal.isTransfer
+                  ? Text(
+                      // "Uzum viza → Hamkor bank" — kulrang, bir qatorda, ellipsis
+                      amal.kategoriyaName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[600],
+                        fontSize: 15,
+                      ),
+                    )
+                  : Text(
+                      context.l10n.defaultKatNom(amal.kategoriyaName),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[900],
+                        fontSize: 16,
+                      ),
+                    ),
             ),
             // Summa + vaqt (delete ochilganda chapga suriladi)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${amal.isKirim ? '+' : '-'}${appFmt(double.tryParse(amal.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)}',
+                  amal.isTransfer
+                      ? appFmt(double.tryParse(amal.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)
+                      : '${amal.isKirim ? '+' : '-'}${appFmt(double.tryParse(amal.amount) ?? 0, context.read<SozlamalarCubit>().state.formatKod)}',
                   style: TextStyle(
-                    color: amal.isKirim
-                        ? const Color(0xFF34C759)
-                        : const Color(0xFFFF3B30),
+                    color: amal.isTransfer
+                        ? Colors.grey[700]
+                        : (amal.isKirim
+                            ? const Color(0xFF34C759)
+                            : const Color(0xFFFF3B30)),
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),

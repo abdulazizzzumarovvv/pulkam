@@ -264,7 +264,7 @@ class _KirimChiqimToggle extends StatelessWidget {
     final l10n = context.l10n;
     final amallar = context.watch<AmalCubit>().state.amallar.where((a) {
       final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
-      return dt.year == month.year && dt.month == month.month;
+      return !a.isTransfer && dt.year == month.year && dt.month == month.month;
     }).toList();
 
     final oylikKirim = amallar
@@ -414,7 +414,8 @@ class _StatsPage extends StatelessWidget {
     final kCard = Color.alphaBlend(Colors.white.withValues(alpha: 0.07), kBg);
     final amallar = context.watch<AmalCubit>().state.amallar.where((a) {
       final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);
-      return dt.year == month.year &&
+      return !a.isTransfer &&
+          dt.year == month.year &&
           dt.month == month.month &&
           a.isKirim == !isChiqim;
     }).toList();

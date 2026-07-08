@@ -79,6 +79,8 @@ class MaqsadCubit extends Cubit<MaqsadState> {
       colorValue: maqsad.colorValue,
       isCompleted: maqsad.isCompleted,
       completedAt: _completion(maqsad.balance, maqsad.target, 0),
+      defaultKey: maqsad.defaultKey,
+      deadline: maqsad.deadline,
     );
     await _box.add(m);
     emit(MaqsadState(_box.values.toList()));
@@ -93,6 +95,8 @@ class MaqsadCubit extends Cubit<MaqsadState> {
       colorValue: updated.colorValue,
       isCompleted: updated.isCompleted,
       completedAt: _completion(updated.balance, updated.target, old.completedAt),
+      defaultKey: updated.defaultKey,
+      deadline: updated.deadline,
     );
     await _box.put(old.key, m);
     emit(MaqsadState(_box.values.toList()));
@@ -112,6 +116,8 @@ class MaqsadCubit extends Cubit<MaqsadState> {
       colorValue: maqsad.colorValue,
       isCompleted: maqsad.isCompleted,
       completedAt: _completion(yangiBalance, maqsad.target, maqsad.completedAt),
+      defaultKey: maqsad.defaultKey,
+      deadline: maqsad.deadline,
     );
     await _box.put(maqsad.key, updated);
     emit(MaqsadState(_box.values.toList()));

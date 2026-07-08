@@ -8,6 +8,9 @@ const _kOltin = Color(0xFFD4AF37);
 const _kOltinOchiq = Color(0xFFF5D061);
 const _kSize = 52.0;
 
+/// Ilova PIN bilan qulflanganmi — qulf ekranida mikrofon ko'rinmaydi
+final ValueNotifier<bool> appQulflangan = ValueNotifier(false);
+
 /// Floating dumaloq mikrofon — barcha ekranlar ustida turadi (Pro).
 /// Sudrab istalgan joyga qo'yish mumkin, joyi eslab qolinadi.
 class FloatingMicButton extends StatefulWidget {
@@ -37,11 +40,18 @@ class _FloatingMicButtonState extends State<FloatingMicButton> {
     if (!isPro) return const SizedBox.shrink();
 
     return ValueListenableBuilder<bool>(
-      valueListenable: voiceDialogOchiq,
-      builder: (context, dialogOchiq, _) {
-        // Gapirish rejimida floating tugma yashirinadi
-        if (dialogOchiq) return const SizedBox.shrink();
-        return _tugma(context);
+      valueListenable: appQulflangan,
+      builder: (context, qulflangan, _) {
+        // PIN qulf ekranida ko'rinmaydi
+        if (qulflangan) return const SizedBox.shrink();
+        return ValueListenableBuilder<bool>(
+          valueListenable: voiceDialogOchiq,
+          builder: (context, dialogOchiq, _) {
+            // Gapirish rejimida floating tugma yashirinadi
+            if (dialogOchiq) return const SizedBox.shrink();
+            return _tugma(context);
+          },
+        );
       },
     );
   }

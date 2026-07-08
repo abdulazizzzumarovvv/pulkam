@@ -22,40 +22,55 @@ class _PlanInfo {
   });
 }
 
+// Narxlar til/valyuta sozlamasidan qat'i nazar DOIM so'mda.
+// (so'z "so'm/сум/soʻm" faqat matn — summa o'zgarmaydi)
 _PlanInfo _planInfo(String lang) {
-  switch (lang) {
-    case 'uz':
-      return const _PlanInfo(
-        umrbodNarx: "199 000 so'm",
-        yillikNarx: "99 000 so'm",
-        yillikHafta: "1 900 so'm",
-        oylikNarx: "12 000 so'm",
-        oylikHafta: "3 000 so'm",
-        chegirma: '-31%',
-      );
-    case 'ru':
-      return const _PlanInfo(
-        umrbodNarx: '2 690 ₽',
-        yillikNarx: '1 290 ₽',
-        yillikHafta: '25 ₽',
-        oylikNarx: '149 ₽',
-        oylikHafta: '37 ₽',
-        chegirma: '-28%',
-      );
-    default:
-      return const _PlanInfo(
-        umrbodNarx: r'$26.97',
-        yillikNarx: r'$13.49',
-        yillikHafta: r'$0.26',
-        oylikNarx: r'$1.59',
-        oylikHafta: r'$0.40',
-        chegirma: '-29%',
-      );
-  }
+  final som = switch (lang) {
+    'ru' => 'сум',
+    'en' => 'soʻm',
+    _ => "so'm",
+  };
+  return _PlanInfo(
+    umrbodNarx: '249 900 $som',
+    yillikNarx: '159 900 $som',
+    yillikHafta: '3 075 $som',
+    oylikNarx: '14 900 $som',
+    oylikHafta: '3 440 $som',
+    chegirma: '-11%',
+  );
 }
 
-/// Pro sahifasini ochish
-Future<void> showProPage(BuildContext context) {
+/// Pro sahifasini ochish.
+/// HOZIRCHA (Click integratsiyasigacha): sahifa ochilmaydi, "Tez orada" xabari.
+Future<void> showProPage(BuildContext context) async {
+  final l10n = context.l10n;
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_clock_rounded, color: Color(0xFFF5D061), size: 20),
+          const SizedBox(width: 10),
+          Text(
+            l10n.comingSoon,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: const Color(0xFF1E2233),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
+
+/// Pro sahifasini haqiqatan ochish (Click ulanganda ishlatiladi).
+Future<void> openProPageReal(BuildContext context) {
   return Navigator.push(
     context,
     MaterialPageRoute(builder: (_) => const ProPage(), fullscreenDialog: true),

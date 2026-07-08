@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import '../../hisoblar_shared.dart' show kNumStyle;
 import '../../hisoblar_tab/logic/hisob_cubit.dart';
 import '../../hisoblar_tab/data/hisob_model.dart';
 import '../../maqsadlar_tab/logic/maqsad_cubit.dart';
@@ -358,11 +359,7 @@ class _MaqsadTopUpSheetState extends State<MaqsadTopUpSheet>
                 fit: BoxFit.scaleDown,
                 child: Text(
                   big,
-                  style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
-                  ),
+                  style: kNumStyle(fontSize: 40, fontWeight: FontWeight.bold, color: const Color(0xFF1A1A1A)),
                 ),
               ),
             ),

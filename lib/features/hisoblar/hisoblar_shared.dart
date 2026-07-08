@@ -5,6 +5,7 @@ library;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import 'hisoblar_tab/data/hisob_model.dart';
 import 'maqsadlar_tab/data/maqsad_model.dart';
@@ -84,6 +85,20 @@ const kOylar = [
   'Noy',
   'Dek',
 ];
+
+// ── Raqamlar uchun font (Roboto) ──────────────────────────────────────
+TextStyle kNumStyle({
+  double fontSize = 32,
+  FontWeight fontWeight = FontWeight.bold,
+  Color color = Colors.white,
+  double? height,
+}) =>
+    GoogleFonts.roboto(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+    );
 
 // ── Yordamchi funksiyalar ─────────────────────────────────────────────
 String hisobFmt(double v, String formatKod) => appFmt(v, formatKod);

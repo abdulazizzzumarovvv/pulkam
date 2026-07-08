@@ -25,6 +25,11 @@ class AmalModel extends HiveObject {
   @HiveField(6)
   final int timestamp;
 
+  // Kartadan-kartaga (hisob→hisob) o'tkazma bo'lsa true.
+  // Bunday amal neytral ko'rsatiladi va statistika/balansga ta'sir qilmaydi.
+  @HiveField(7)
+  final bool isTransfer;
+
   AmalModel({
     required this.kategoriyaName,
     required this.amount,
@@ -33,5 +38,6 @@ class AmalModel extends HiveObject {
     required this.hisobName,
     required this.isKirim,
     required this.timestamp,
+    this.isTransfer = false,
   });
 }

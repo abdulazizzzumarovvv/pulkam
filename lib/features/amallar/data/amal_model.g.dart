@@ -24,13 +24,14 @@ class AmalModelAdapter extends TypeAdapter<AmalModel> {
       hisobName: fields[4] as String,
       isKirim: fields[5] as bool,
       timestamp: fields[6] as int,
+      isTransfer: fields[7] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, AmalModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.kategoriyaName)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class AmalModelAdapter extends TypeAdapter<AmalModel> {
       ..writeByte(5)
       ..write(obj.isKirim)
       ..writeByte(6)
-      ..write(obj.timestamp);
+      ..write(obj.timestamp)
+      ..writeByte(7)
+      ..write(obj.isTransfer);
   }
 
   @override
