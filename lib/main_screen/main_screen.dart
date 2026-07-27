@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +10,8 @@ import 'package:pulkam/features/pro/ui/pro_page.dart';
 import 'package:pulkam/features/hisoblar/widgets/calculator/kirim_chiqim_sheet.dart';
 import 'package:pulkam/features/malumotlar/ui/malumotlar_screen.dart';
 import 'package:pulkam/services/tutorial_service.dart';
+import 'package:pulkam/services/widget_sync.dart';
+import 'package:pulkam/features/voice/ui/voice_input_dialog.dart';
 import 'package:pulkam/l10n.dart';
 
 class MainScreen extends StatefulWidget {
@@ -40,6 +41,9 @@ class _MainScreenState extends State<MainScreen> {
       );
     };
 
+    // Widget tugmalari (deep-link) → kerakli ekran
+    widgetRouteHandler = _handleWidgetRoute;
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final box = Hive.box('settings');
@@ -62,6 +66,29 @@ class _MainScreenState extends State<MainScreen> {
         _turBoshla();
       }
     });
+  }
+
+  // ── Widget deep-link'ini boshqarish ────────────────────────────────
+  Future<void> _handleWidgetRoute(String route) async {
+    if (!mounted) return;
+    switch (route) {
+      case 'home':
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(1);
+        }
+      case 'kirim':
+      case 'chiqim':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => KirimChiqimSheet(kirimBoshlansin: route == 'kirim'),
+          ),
+        );
+      case 'voice':
+        showVoiceInputDialog(context);
+      case 'pro':
+        showProPage(context);
+    }
   }
 
   // ── Tutorial turini boshlash (settings'dagi "Yo'riqnoma"dan ham) ────
@@ -92,6 +119,7 @@ class _MainScreenState extends State<MainScreen> {
   void dispose() {
     tutorialSahifaga = null;
     tutorialQaytaBoshla = null;
+    widgetRouteHandler = null;
     _pageController.dispose();
     super.dispose();
   }
@@ -145,13 +173,13 @@ class _GlassPillNavBar extends StatelessWidget {
       padding: const EdgeInsets.only(left: 44, right: 44, bottom: 30, top: 8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(40),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
+        // BackdropFilter (blur) olib tashlandi — panel doim ekranda turadi,
+        // blur uzluksiz GPU yuklardi. Fon deyarli qora, ko'rinish o'zgarmaydi.
+        child: Container(
             height: 66,
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
+              color: Colors.black.withValues(alpha: 0.82),
               borderRadius: BorderRadius.circular(40),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.12),
@@ -193,7 +221,6 @@ class _GlassPillNavBar extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }

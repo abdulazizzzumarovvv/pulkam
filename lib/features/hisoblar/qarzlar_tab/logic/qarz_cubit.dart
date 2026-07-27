@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 import '../data/qarz_model.dart';
+import '../../hisoblar_tab/logic/hisob_cubit.dart';
+import '../../../amallar/logic/amal_cubit.dart';
 
 class QarzState {
   final List<QarzModel> qarzlar;
@@ -53,7 +55,36 @@ class QarzCubit extends Cubit<QarzState> {
     _load();
   }
 
-  Future<void> deleteQarz(QarzModel qarz) async {
+  /// Qarzni o'chiradi VA ta'sirini ortga qaytaradi:
+  ///  • hisob balansidan qarzning qolgan (chiqmagan) qismini teskari qaytaradi
+  ///  • amallar tarixidan qarz yaratilgan yozuvni o'chiradi
+  Future<void> deleteQarz(
+    QarzModel qarz, {
+    required HisobCubit hisobCubit,
+    required AmalCubit amalCubit,
+  }) async {
+    // Chiqmagan (qolgan) qism — yaratishda +, to'lovlarda − bo'lgan sof effekt
+    final qoldiq = qarz.remaining;
+    final matches = hisobCubit.state.hisoblar.where(
+      (h) => h.name == qarz.hisobName,
+    );
+    if (qoldiq != 0 && matches.isNotEmpty) {
+      final hisob = matches.first;
+      final bal = double.tryParse(hisob.balance) ?? 0;
+      // Oldim: yaratishda karta +qoldiq bo'lgan → o'chirishda −qoldiq
+      // Berdim: yaratishda karta −qoldiq bo'lgan → o'chirishda +qoldiq
+      final newBal = qarz.isQarzBerdim ? bal + qoldiq : bal - qoldiq;
+      await hisobCubit.updateBalance(hisob, newBal.toStringAsFixed(2));
+    }
+
+    // Amallar tarixidan qarz YARATILGAN yozuvni o'chirish (to'lovlar qoladi)
+    await amalCubit.deleteQarzYaratilganAmal(
+      hisobName: qarz.hisobName,
+      timestamp: qarz.timestamp,
+      isQarzBerdim: qarz.isQarzBerdim,
+      amount: qarz.amount,
+    );
+
     await qarz.delete();
     _load();
   }

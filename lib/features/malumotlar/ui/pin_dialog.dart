@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
@@ -62,10 +61,7 @@ class _PinDialogState extends State<_PinDialog> {
     return Stack(
       children: [
         Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(color: Colors.black.withValues(alpha: 0.45)),
-          ),
+          child: Container(color: Colors.black.withValues(alpha: 0.6)),
         ),
         SafeArea(
           child: _PinPad(

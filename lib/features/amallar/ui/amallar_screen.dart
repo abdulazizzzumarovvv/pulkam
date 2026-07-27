@@ -4,12 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_shared.dart' show kNumStyle;
 import 'package:pulkam/features/malumotlar/ui/malumotlar_screen.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
+import 'package:pulkam/features/pro/ui/pro_page.dart';
 import '../logic/amal_cubit.dart';
 import '../data/amal_model.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import 'package:pulkam/features/hisoblar/maqsadlar_tab/logic/maqsad_cubit.dart';
 import 'package:pulkam/features/hisoblar/widgets/calculator/kirim_chiqim_sheet.dart';
-import 'dart:ui';
 import 'package:pulkam/features/amallar/widgets/profile_dialog.dart';
 import 'package:pulkam/features/profile/logic/profile_cubit.dart';
 import 'dart:io';
@@ -217,30 +217,23 @@ class AmallarScreen extends StatelessWidget {
                         ),
                         borderRadius: BorderRadius.circular(30),
                         child: ClipOval(
-                          // Shisha xiralashtirish effekti dumaloq chegaradan chiqib ketmasligi uchun
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: 10,
-                              sigmaY: 10,
-                            ), // Orqa fonni xiralashtirish (blur)
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                // Yarim shaffof oq rang shisha effektini beradi
-                                color: Colors.white.withValues(alpha: 0.07),
-                                border: Border.all(
-                                  // Shisha chetidagi mayin yorug'lik chizig'i
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  width: 1.5,
-                                ),
+                          // BackdropFilter (blur) olib tashlandi — tezlik uchun.
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              // Yarim shaffof oq rang shisha effektini beradi
+                              color: Colors.white.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                width: 1.5,
                               ),
-                              child: const Icon(
-                                Icons.add_rounded,
-                                color: Colors.white,
-                                size: 28,
-                              ),
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              color: Colors.white,
+                              size: 28,
                             ),
                           ),
                         ),
@@ -310,9 +303,67 @@ class AmallarScreen extends StatelessWidget {
                               ),
                             ),
 
-                            // 3. O'NG TARAF: chap bilan muvozanat uchun bo'sh joy
-                            // (mikrofon endi floating dumaloq tugmada)
-                            const SizedBox(width: 52),
+                            // 3. O'NG TARAF: Pro bo'lmasa — mikrofon (Pro) pilli.
+                            // Pro bo'lsa floating tugmadan foydalanadi, bu yerda bo'sh.
+                            Builder(builder: (context) {
+                              final isPro = context
+                                  .watch<SozlamalarCubit>()
+                                  .state
+                                  .isPro;
+                              if (isPro) return const SizedBox(width: 52);
+                              return GestureDetector(
+                                onTap: () => showProPage(context),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(100),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Mikrofon ikonasi — diagonal o'chirilgan
+                                      SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.mic_rounded,
+                                              color: Colors.grey
+                                                  .withValues(alpha: 0.4),
+                                              size: 18,
+                                            ),
+                                            CustomPaint(
+                                              size: const Size(20, 20),
+                                              painter: _MicSlashPainter(
+                                                color: Colors.grey
+                                                    .withValues(alpha: 0.55),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          color: Colors.grey
+                                              .withValues(alpha: 0.55),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ),
@@ -833,4 +884,26 @@ class _UzsBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+// Mikrofon (Pro) pill uchun diagonal chiziq — o'chirilgan holatni bildiradi
+class _MicSlashPainter extends CustomPainter {
+  final Color color;
+  const _MicSlashPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.15, size.height * 0.85),
+      Offset(size.width * 0.85, size.height * 0.15),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MicSlashPainter old) => old.color != color;
 }

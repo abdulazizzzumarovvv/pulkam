@@ -32,7 +32,7 @@ class AppL10n {
         'en': 'LittleMoney',
       });
   String get proOlish => _t({
-        'uz': 'PRO olish',
+        'uz': 'PRO oling',
         'ru': 'Получить PRO',
         'en': 'Get PRO',
       });
@@ -446,6 +446,40 @@ class AppL10n {
         'uz': 'Chiqim',
         'ru': 'Расход',
         'en': 'Expense',
+      });
+
+  // ── Kirim/Chiqim sheet ──────────────────────────────────────────────────
+  String get kategoriyaTanlang => _t({
+        'uz': 'Kategoriya tanlang',
+        'ru': 'Выберите категорию',
+        'en': 'Choose category',
+      });
+  String get katLongTap => _t({
+        'uz': 'Tahrirlash yoki o\'chirish uchun bosib turing',
+        'ru': 'Удерживайте, чтобы изменить или удалить',
+        'en': 'Long tap to edit or delete category',
+      });
+
+  // ── Widget ──────────────────────────────────────────────────────────────
+  String get ovoz => _t({
+        'uz': 'Ovoz',
+        'ru': 'Голос',
+        'en': 'Voice',
+      });
+  String get widget => _t({
+        'uz': 'Bosh ekran vidjeti',
+        'ru': 'Виджет на экране',
+        'en': 'Home screen widget',
+      });
+  String get widgetQoshildi => _t({
+        'uz': 'Vidjet qo\'shildi',
+        'ru': 'Виджет добавлен',
+        'en': 'Widget added',
+      });
+  String get widgetQollanma => _t({
+        'uz': 'Bosh ekranni bosib turing → Vidjetlar → PulKam',
+        'ru': 'Удерживайте экран → Виджеты → PulKam',
+        'en': 'Long-press home screen → Widgets → PulKam',
       });
 
   // ── Hisoblar ────────────────────────────────────────────────────────────

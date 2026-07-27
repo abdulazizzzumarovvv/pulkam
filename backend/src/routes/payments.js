@@ -11,9 +11,9 @@ dotenv.config();
 const router = express.Router();
 
 const PRICES = {
-  oylik: Number(process.env.PRICE_OYLIK || 14900),
-  yillik: Number(process.env.PRICE_YILLIK || 159900),
-  umrbod: Number(process.env.PRICE_UMRBOD || 249900),
+  oylik: Number(process.env.PRICE_OYLIK || 13900),
+  yillik: Number(process.env.PRICE_YILLIK || 99900),
+  umrbod: Number(process.env.PRICE_UMRBOD || 299000),
 };
 
 // POST /payments/create  { plan }  -> { orderId, amount, checkoutUrl }

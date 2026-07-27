@@ -1,7 +1,9 @@
-import 'dart:ui';
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pulkam/features/amallar/data/amal_model.dart';
 import 'package:pulkam/features/amallar/logic/amal_cubit.dart';
 import 'package:pulkam/features/hisoblar/hisoblar_tab/data/hisob_model.dart';
@@ -9,6 +11,7 @@ import 'package:pulkam/features/hisoblar/hisoblar_tab/logic/hisob_cubit.dart';
 import 'package:pulkam/features/kategoriya/logic/kategoriya_cubit.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
 import 'package:pulkam/services/ai_voice_service.dart';
+import 'package:pulkam/services/whisper_service.dart';
 import 'package:pulkam/l10n.dart';
 
 const _kOltin = Color(0xFFD4AF37);
@@ -62,12 +65,19 @@ class _VoiceDialog extends StatefulWidget {
 
 class _VoiceDialogState extends State<_VoiceDialog>
     with SingleTickerProviderStateMixin {
-  final _speech = SpeechToText();
+  final _recorder = AudioRecorder();
   late final AnimationController _pulse;
   _Holat _holat = _Holat.tinglash;
   String _matn = '';
   String _natijaMatn = ''; // muvaffaqiyat xulosasi
   bool _ishlangan = false; // ikki marta process bo'lmasin
+  bool _yozilyapti = false;
+  String? _audioPath;
+
+  // Jimlik bo'yicha avto-to'xtash uchun
+  StreamSubscription<Amplitude>? _ampSub;
+  Timer? _jimlikTimer; // gapirmasa 2s dan keyin avto-stop
+  bool _ovozKeldi = false; // hech bo'lmasa bir marta ovoz kelganmi
 
   @override
   void initState() {
@@ -82,88 +92,139 @@ class _VoiceDialogState extends State<_VoiceDialog>
   @override
   void dispose() {
     _pulse.dispose();
-    _speech.cancel();
+    _ampSub?.cancel();
+    _jimlikTimer?.cancel();
+    _recorder.dispose();
     super.dispose();
   }
 
-  String get _localeId {
+  // Ilova tili — Whisper'ga aniqlik uchun beriladi
+  String get _lang {
     switch (context.l10n.lang) {
       case 'ru':
-        return 'ru-RU';
+        return 'ru';
       case 'en':
-        return 'en-US';
+        return 'en';
       default:
-        return 'uz-UZ';
+        return 'uz';
     }
   }
 
   Future<void> _boshla() async {
-    // Tahlil FAQAT user mikrofonni qayta bosganda boshlanadi —
-    // shuning uchun status/error da avtomatik ishlov yo'q.
-    final ok = await _speech.initialize(
-      onStatus: (_) {},
-      onError: (_) {},
-    );
+    // Mikrofon ruxsati
+    final ruxsat = await _recorder.hasPermission();
     if (!mounted) return;
-    if (!ok) {
+    if (!ruxsat) {
       _yopVaKorsat(context.l10n.ovozRuxsatYoq, yoriqnoma: false);
       return;
     }
 
-    // Ilova tiliga mos locale: qurilma ro'yxatida aniq mosi bo'lsa — o'sha,
-    // yaqin varianti bo'lsa — o'sha; topilmasa ham baribir so'ralgan tilni
-    // majburan beramiz (Google STT ro'yxatda bo'lmasa ham ko'pincha qabul qiladi).
-    String localeId = _localeId;
-    try {
-      String norm(String s) => s.replaceAll('_', '-').toLowerCase();
-      final locales = await _speech.locales();
-      final target = norm(_localeId);
-      final prefix = target.split('-').first;
-      final exact =
-          locales.where((l) => norm(l.localeId) == target).firstOrNull;
-      final oxshash = locales
-          .where((l) => norm(l.localeId).startsWith(prefix))
-          .firstOrNull;
-      localeId = (exact ?? oxshash)?.localeId ?? _localeId;
-    } catch (_) {
-      localeId = _localeId;
-    }
+    // Yozib olinadigan fayl yo'li
+    final dir = await getTemporaryDirectory();
+    _audioPath =
+        '${dir.path}/pulkam_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
     if (!mounted) return;
 
-    _speech.listen(
-      // Eski parametr deprecated bo'lsa ham ba'zi qurilmalarda faqat shu
-      // ishlaydi — ikkala usulda ham beramiz.
-      // ignore: deprecated_member_use
-      localeId: localeId,
-      listenOptions: SpeechListenOptions(
-        localeId: localeId,
-        listenMode: ListenMode.dictation,
-        partialResults: true,
-        pauseFor: const Duration(seconds: 8),
-        listenFor: const Duration(seconds: 60),
-      ),
-      onResult: (result) {
-        if (!mounted) return;
-        // Faqat matnni yig'amiz — tahlil mikrofon bosilganda
-        setState(() => _matn = result.recognizedWords);
-      },
-    );
+    try {
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        path: _audioPath!,
+      );
+      _yozilyapti = true;
+      _yozishBoshi = DateTime.now();
+
+      // Amplitude oqimi — jimlik bo'yicha avto-to'xtash
+      _ampSub = _recorder
+          .onAmplitudeChanged(const Duration(milliseconds: 200))
+          .listen(_amplitude);
+    } catch (_) {
+      if (mounted) _yopVaKorsat(context.l10n.ovozXato, yoriqnoma: false);
+    }
   }
 
-  // ── Matnni GPT'ga yuborib amalga aylantirish ────────────────────────
+  DateTime? _yozishBoshi;
+  double _tinchlik = -45.0; // fon shovqini darajasi (moslashuvchan)
+
+  void _amplitude(Amplitude amp) {
+    if (!mounted || !_yozilyapti) return;
+
+    final cur = amp.current; // dBFS: -160 (jim) … 0 (baland)
+    // ignore: avoid_print
+    print('PULKAM_AMP cur=$cur tinchlik=$_tinchlik ovozKeldi=$_ovozKeldi');
+    // Fon shovqinini sekin moslashtiramiz (past qiymatlarda)
+    if (cur < _tinchlik + 3) {
+      _tinchlik = _tinchlik * 0.9 + cur * 0.1;
+    }
+    // Gapiryapti = fon shovqinidan sezilarli baland
+    final gapiryapti = cur > _tinchlik + 12;
+
+    // Kamida 1.5s yozilmaguncha avto-stop yo'q (raqamlarni aytishga vaqt)
+    final otgan = _yozishBoshi == null
+        ? 0
+        : DateTime.now().difference(_yozishBoshi!).inMilliseconds;
+
+    if (gapiryapti) {
+      _ovozKeldi = true;
+      _jimlikTimer?.cancel();
+      _jimlikTimer = null;
+    } else if (_ovozKeldi && _jimlikTimer == null && otgan > 1500) {
+      // Gapirdi, keyin jim bo'ldi — 2s jimlikdan keyin avto-stop
+      _jimlikTimer = Timer(const Duration(milliseconds: 2000), () {
+        if (mounted && _holat == _Holat.tinglash) _ishla();
+      });
+    }
+  }
+
+  // ── Yozishni to'xtatib, Whisper → GPT orqali amalga aylantirish ─────
   Future<void> _ishla() async {
     if (_ishlangan || !mounted) return;
     _ishlangan = true;
-    _speech.stop();
+    _jimlikTimer?.cancel();
+    await _ampSub?.cancel();
 
     final l10n = context.l10n;
-    final matn = _matn.trim();
-    if (matn.isEmpty) {
+
+    // Yozishni to'xtatamiz
+    String? path;
+    try {
+      path = await _recorder.stop();
+      _yozilyapti = false;
+    } catch (_) {
+      path = _audioPath;
+    }
+    if (!mounted) return;
+
+    // ignore: avoid_print
+    print('PULKAM_STOP path=$path exists=${path != null && File(path).existsSync()} '
+        'size=${path != null && File(path).existsSync() ? File(path).lengthSync() : -1}');
+
+    if (path == null || !File(path).existsSync()) {
       _yopVaKorsat(l10n.ovozTushunmadim);
       return;
     }
 
+    // Tahlil holati — spinner
     setState(() => _holat = _Holat.tahlil);
+
+    // 1-bosqich: Whisper — audio → matn
+    final matn = (await transcribeAudio(path, langHint: _lang))?.trim() ?? '';
+    // ignore: avoid_print
+    print('PULKAM_WHISPER natija="$matn"');
+    // Fayl endi kerak emas — o'chiramiz
+    try {
+      File(path).deleteSync();
+    } catch (_) {}
+    if (!mounted) return;
+
+    if (matn.isEmpty) {
+      _yopVaKorsat(l10n.ovozTushunmadim);
+      return;
+    }
+    setState(() => _matn = matn);
 
     final kategoriyalar = context
         .read<KategoriyaCubit>()
@@ -304,20 +365,21 @@ class _VoiceDialogState extends State<_VoiceDialog>
 
     return Stack(
       children: [
-        // Blur orqa fon
+        // Qorong'i orqa fon
         Positioned.fill(
           child: GestureDetector(
             onTap: _holat == _Holat.tinglash
-                ? () {
-                    _speech.cancel();
-                    Navigator.pop(context);
+                ? () async {
+                    _jimlikTimer?.cancel();
+                    await _ampSub?.cancel();
+                    try {
+                      await _recorder.stop();
+                    } catch (_) {}
+                    if (mounted) Navigator.pop(context);
                   }
                 : null,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: Container(
-                color: bg.withValues(alpha: 0.75),
-              ),
+            child: Container(
+              color: bg.withValues(alpha: 0.92),
             ),
           ),
         ),

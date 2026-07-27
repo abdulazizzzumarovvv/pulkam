@@ -31,12 +31,12 @@ _PlanInfo _planInfo(String lang) {
     _ => "so'm",
   };
   return _PlanInfo(
-    umrbodNarx: '249 900 $som',
-    yillikNarx: '159 900 $som',
-    yillikHafta: '3 075 $som',
-    oylikNarx: '14 900 $som',
-    oylikHafta: '3 440 $som',
-    chegirma: '-11%',
+    umrbodNarx: '299 000 $som',
+    yillikNarx: '99 900 $som',
+    yillikHafta: '1 920 $som',
+    oylikNarx: '13 900 $som',
+    oylikHafta: '3 210 $som',
+    chegirma: '-40%',
   );
 }
 

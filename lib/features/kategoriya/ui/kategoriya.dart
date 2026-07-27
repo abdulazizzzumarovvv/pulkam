@@ -108,9 +108,9 @@ class Kategoriya extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 5),
-                        // Pro: "AI chat", aks holda "PRO"
+                        // Pro: "AI chat", aks holda "AI analiz"
                         Text(
-                          isPro ? 'AI chat' : 'PRO',
+                          isPro ? 'AI chat' : 'AI analiz',
                           style: TextStyle(
                             color: isPro
                                 ? const Color(0xFFD4AF37)

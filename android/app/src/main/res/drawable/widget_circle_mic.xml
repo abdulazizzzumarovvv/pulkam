@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ovoz (mikrofon) tugmasi — ilovadagi floating tugma uslubida:
+     oltin gradient (F5D061 → D4AF37) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:startColor="#F5D061"
+        android:endColor="#D4AF37"
+        android:angle="315" />
+</shape>

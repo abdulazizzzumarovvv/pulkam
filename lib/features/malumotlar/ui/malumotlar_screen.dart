@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +7,7 @@ import 'package:pulkam/features/malumotlar/ui/format_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/pin_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/til_dialog.dart';
 import 'package:pulkam/features/malumotlar/ui/reminder_dialog.dart';
+import 'package:pulkam/services/widget_service.dart';
 import 'package:pulkam/features/pro/ui/pro_page.dart';
 import 'package:pulkam/services/tutorial_service.dart';
 import 'package:pulkam/l10n.dart';
@@ -46,7 +46,8 @@ class MalumotlarScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  l10n.appName,
+                  // Nom hech qachon tarjima qilinmaydi — doim "PulKam"
+                  'PulKam',
                   style: TextStyle(
                     color: textColor,
                     fontWeight: FontWeight.bold,
@@ -74,7 +75,7 @@ class MalumotlarScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
-                      state.isPro ? 'PRO' : l10n.comingSoon,
+                      state.isPro ? 'PRO' : l10n.proOlish,
                       style: TextStyle(
                         color: state.isPro
                             ? const Color(0xFF3E320A)
@@ -143,6 +144,29 @@ class MalumotlarScreen extends StatelessWidget {
                         style: TextStyle(color: subtextColor, fontSize: 14),
                       ),
                       onTap: () => showTilDialog(context),
+                      textColor: textColor,
+                      themeBg: bg,
+                    ),
+                    _ToggleItem(
+                      icon: Icons.widgets_rounded,
+                      iconBg: const Color(0xFF00BCD4),
+                      label: l10n.widget,
+                      value: state.widgetYoniq,
+                      onChanged: (v) async {
+                        context.read<SozlamalarCubit>().setWidgetYoniq(v);
+                        if (v) {
+                          final ok = await requestPinWidget();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                ok ? l10n.widgetQoshildi : l10n.widgetQollanma,
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
                       textColor: textColor,
                       themeBg: bg,
                       showDivider: false,
@@ -386,10 +410,7 @@ class _MavzuDialogState extends State<_MavzuDialog> {
         Positioned.fill(
           child: GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: Container(color: Colors.black.withValues(alpha: 0.35)),
-            ),
+            child: Container(color: Colors.black.withValues(alpha: 0.5)),
           ),
         ),
         Dialog(
@@ -691,21 +712,18 @@ class _GlassBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25),
-                width: 1.2,
-              ),
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.25),
+              width: 1.2,
             ),
-            child: Icon(icon, color: iconColor, size: 24),
           ),
+          child: Icon(icon, color: iconColor, size: 24),
         ),
       ),
     );

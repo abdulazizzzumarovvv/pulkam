@@ -68,6 +68,7 @@ class SozlamalarState {
   final String pinValue;
   final String tilKod;
   final bool isPro;
+  final bool widgetYoniq;
   final List<ReminderItem> reminders;
 
   const SozlamalarState({
@@ -79,6 +80,7 @@ class SozlamalarState {
     this.pinValue = '',
     this.tilKod = '',
     this.isPro = false,
+    this.widgetYoniq = false,
     this.reminders = const [
       ReminderItem(enabled: false, hour: 9,  minute: 0),
       ReminderItem(enabled: false, hour: 14, minute: 0),
@@ -95,6 +97,7 @@ class SozlamalarState {
     String? pinValue,
     String? tilKod,
     bool? isPro,
+    bool? widgetYoniq,
     List<ReminderItem>? reminders,
   }) =>
       SozlamalarState(
@@ -106,6 +109,7 @@ class SozlamalarState {
         pinValue: pinValue ?? this.pinValue,
         tilKod: tilKod ?? this.tilKod,
         isPro: isPro ?? this.isPro,
+        widgetYoniq: widgetYoniq ?? this.widgetYoniq,
         reminders: reminders ?? this.reminders,
       );
 }
@@ -120,6 +124,7 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
   static const _keyPinValue = 'pin_value';
   static const _keyTil = 'til_kod';
   static const _keyPro = 'is_pro';
+  static const _keyWidget = 'widget_yoniq';
   static const _keyProPlan = 'pro_plan'; // 'umrbod' | 'yillik' | 'oylik'
   static const _keyProExpiry = 'pro_expiry'; // millis, umrbodda yo'q
   static const keyProExpiredPending = 'pro_expired_pending';
@@ -139,7 +144,8 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
     final format = box.get(_keyFormat) as String? ?? 'comma_dot';
     final pinVal = box.get(_keyPinValue) as String? ?? '';
     final til = box.get(_keyTil) as String? ?? '';
-    var pro = box.get(_keyPro) as bool? ?? false;
+    var pro = true; // TEST: vaqtincha Pro yoqilgan (mikrofonni ko'rish uchun) — QAYTARISH KERAK: box.get(_keyPro) as bool? ?? false;
+    final widgetYoniq = box.get(_keyWidget) as bool? ?? false;
     // Obuna muddati tugaganmi? (umrbodda expiry saqlanmaydi)
     final expiry = box.get(_keyProExpiry) as int?;
     if (pro &&
@@ -167,8 +173,14 @@ class SozlamalarCubit extends Cubit<SozlamalarState> {
       pinValue: pinVal,
       tilKod: til,
       isPro: pro,
+      widgetYoniq: widgetYoniq,
       reminders: reminders,
     ));
+  }
+
+  void setWidgetYoniq(bool val) {
+    Hive.box(_boxName).put(_keyWidget, val);
+    emit(state.copyWith(widgetYoniq: val));
   }
 
   void setPro(bool val) {

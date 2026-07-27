@@ -68,13 +68,10 @@ Future<void> scheduleDaily(int id, int hour, int minute, String title, String bo
             UILocalNotificationDateInterpretation.absoluteTime,
       );
 
-  try {
-    await qoy(AndroidScheduleMode.exactAllowWhileIdle);
-  } catch (_) {
-    // Android 12+ da exact alarm ruxsati berilmagan bo'lsa —
-    // taxminiy rejimda baribir ishlasin (bir necha daqiqa farq bilan)
-    await qoy(AndroidScheduleMode.inexactAllowWhileIdle);
-  }
+  // Taxminiy rejim — Google Play exact alarm ruxsatini faqat
+  // alarm/calendar ilovalariga beradi. Eslatma bir necha daqiqa
+  // farq bilan kelishi mumkin (bu moliyaviy reminderlar uchun mos).
+  await qoy(AndroidScheduleMode.inexactAllowWhileIdle);
 }
 
 Future<void> cancelNotification(int id) async {

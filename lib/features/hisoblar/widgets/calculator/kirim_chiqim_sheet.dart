@@ -21,7 +21,8 @@ import 'package:pulkam/l10n.dart';
 /// hisob = null bo'lsa, ro'yxatdagi birinchi hisob default tanlangan bo'ladi.
 class KirimChiqimSheet extends StatefulWidget {
   final HisobModel? hisob; // null = birinchi hisobni auto-tanlash
-  const KirimChiqimSheet({super.key, this.hisob});
+  final bool? kirimBoshlansin; // true=Kirim, false=Chiqim, null=default (chiqim)
+  const KirimChiqimSheet({super.key, this.hisob, this.kirimBoshlansin});
 
   @override
   State<KirimChiqimSheet> createState() => _KirimChiqimSheetState();
@@ -43,6 +44,9 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
   void initState() {
     super.initState();
     _calc = CalculatorCubit();
+    if (widget.kirimBoshlansin != null) {
+      _isChiqim = !widget.kirimBoshlansin!; // widgetdan ochilganda
+    }
     _selectedHisob = widget.hisob; // null bo'lsa build'da birinchisi tanlanadi
     _flash = AnimationController(
       vsync: this,
@@ -119,8 +123,11 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
       return;
     }
     final amount = double.tryParse(_calc.currentValue) ?? 0;
+    // Birinchi kategoriya avtomatik tanlanadi, shuning uchun bu validatsiya
+    // odatda kerak emas. Faqat kategoriyalar butunlay bo'sh bo'lsa ishlaydi
+    // (crashni oldini oladi) — shu sabab qoldirildi.
     if (_selectedKat == null) {
-      _snack(context.l10n.kategoriya);
+      _snack(context.l10n.kategoriyaTanlang);
       return;
     }
     if (amount <= 0) {
@@ -186,6 +193,13 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
               .where((k) => (k.turi == 'chiqim') == _isChiqim)
               .toList();
 
+          // null bo'lsa birinchi kategoriyani default tanlash
+          if (_selectedKat == null && kategoriyalar.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => setState(() => _selectedKat = kategoriyalar.first),
+            );
+          }
+
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: AppBar(
@@ -238,10 +252,26 @@ class _KirimChiqimSheetState extends State<KirimChiqimSheet>
                   // Faqat kategoriyalar scroll bo'ladi
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: Container(
-                        key: TutorialKeys.sheetKategoriya,
-                        child: _categoryGrid(context, kategoriyalar),
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Kategoriyani uzoq bosish bo'yicha maslahat
+                          Text(
+                            context.l10n.katLongTap,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.withValues(alpha: 0.6),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            key: TutorialKeys.sheetKategoriya,
+                            child: _categoryGrid(context, kategoriyalar),
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pulkam/features/malumotlar/logic/sozlamalar_cubit.dart';
@@ -55,10 +54,7 @@ class _TilDialog extends StatelessWidget {
             Positioned.fill(
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(color: Colors.black.withValues(alpha: 0.35)),
-                ),
+                child: Container(color: Colors.black.withValues(alpha: 0.5)),
               ),
             ),
             Dialog(

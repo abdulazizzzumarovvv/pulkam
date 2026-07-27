@@ -50,10 +50,17 @@ OUTPUT — strict JSON, nothing else:
 
 AMOUNT RULES (critical):
 - "ming"/"минг"/"тысяч"/"тыс"/"k"/"thousand" = ×1000 → "15 ming" = 15000, "besh yuz ming" = 500000
-- "million"/"млн"/"миллион" = ×1000000 → "1.5 million" = 1500000
+- "million"/"млн"/"миллион"/"млн." = ×1000000 → "1.5 million" = 1500000
+- COMPOUND numbers: ADD the parts together. Parse left-to-right, each part with its multiplier, then SUM:
+  "1 million 556 ming 224" = 1000000 + 556000 + 224 = 1556224
+  "bir million besh yuz ellik olti ming ikki yuz yigirma to'rt" = 1556224
+  "2 million 300 ming" = 2300000
+  "million yarim" / "bir yarim million" = 1500000
+  "besh ming besh yuz" = 5500
+  "yigirma ming to'rt yuz" = 20400
 - Spelled numbers count: "o'n besh ming" = 15000, "yigirma ming" = 20000, "двадцать тысяч" = 20000
 - CURRENCY WORDS ARE JUST LABELS — ignore them completely, NEVER convert. The user may say any currency name (so'm, sum, сум, dollar, dollars, доллар, euro, евро, rubl, рубль, USD, \$): the number stays as spoken. "1700 dollar" = 1700. "5 dollar" = 5. "100 ming so'm" = 100000.
-- STT often garbles: "15000 so'm", "15 000", "o'n besh ming so'm" — all = 15000
+- STT often garbles digits/words: "15000 so'm", "15 000", "o'n besh ming so'm" — all = 15000. Reconstruct the intended number by sound and by summing spoken parts.
 
 CATEGORY MATCHING (semantic, tolerant to STT errors):
 - kofe, kafe, choy, coffee, restoran, ovqatlanish tashqarida → "Kafe"
@@ -79,6 +86,8 @@ EXAMPLES:
 "non va sut 25 ming" → {"ok":true,"turi":"chiqim","summa":25000,"kategoriya":"Oziq-ovqat","hisob":null}
 "оплатил такси двадцать тысяч" → {"ok":true,"turi":"chiqim","summa":20000,"kategoriya":"Transport","hisob":null}
 "oylik keldi 5 million" → {"ok":true,"turi":"kirim","summa":5000000,"kategoriya":"Oylik","hisob":null}
+"oziq-ovqat 1 million 556 ming 224" → {"ok":true,"turi":"chiqim","summa":1556224,"kategoriya":"Oziq-ovqat","hisob":null}
+"transport 2 million 300 ming" → {"ok":true,"turi":"chiqim","summa":2300000,"kategoriya":"Transport","hisob":null}
 "kartadan dori 40 ming" → {"ok":true,"turi":"chiqim","summa":40000,"kategoriya":"Salomatlik","hisob":"Karta"}
 "salom qalaysan" → {"ok":false,"sabab":"tushunmadim"}''';
 

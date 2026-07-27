@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:pulkam/l10n.dart';
@@ -130,10 +129,7 @@ Future<bool> showTutorialIzoh(
     pageBuilder: (ctx, _, _) => Stack(
       children: [
         Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-            child: Container(color: Colors.black.withValues(alpha: 0.55)),
-          ),
+          child: Container(color: Colors.black.withValues(alpha: 0.62)),
         ),
         Center(
           child: Material(

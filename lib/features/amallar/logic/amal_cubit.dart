@@ -30,6 +30,29 @@ class AmalCubit extends Cubit<AmalState> {
     _load();
   }
 
+  /// Qarz o'chirilganda — o'sha qarz YARATILGAN amal yozuvini topib o'chiradi.
+  /// Moslik: hisob nomi + timestamp + kategoriya (Qarz oldim/berdim) + summa.
+  Future<void> deleteQarzYaratilganAmal({
+    required String hisobName,
+    required int timestamp,
+    required bool isQarzBerdim,
+    required String amount,
+  }) async {
+    final kat = isQarzBerdim ? 'Qarz berdim' : 'Qarz oldim';
+    final amt = double.tryParse(amount) ?? 0;
+    for (final a in _box.values.toList()) {
+      final ayni = a.hisobName == hisobName &&
+          a.timestamp == timestamp &&
+          a.kategoriyaName == kat &&
+          (double.tryParse(a.amount) ?? 0) == amt;
+      if (ayni) {
+        await a.delete();
+        break; // faqat bitta yozuvni o'chiramiz
+      }
+    }
+    _load();
+  }
+
   List<AmalModel> forMonth(int year, int month) {
     return state.amallar.where((a) {
       final dt = DateTime.fromMillisecondsSinceEpoch(a.timestamp);

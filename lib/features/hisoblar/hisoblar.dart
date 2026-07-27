@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -419,13 +419,13 @@ class _HisoblarState extends State<Hisoblar> {
             ),
           ),
 
-          // ── Inline-edit overlay: orqa fon blur + markazda tahrir karta ──
+          // ── Inline-edit overlay: blur fon + markazda tahrir karta ──
           if (_editItem != null) ...[
             Positioned.fill(
               child: GestureDetector(
                 onTap: _endEdit,
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(color: Colors.black.withValues(alpha: 0.35)),
                 ),
               ),
@@ -447,13 +447,13 @@ class _HisoblarState extends State<Hisoblar> {
             ),
           ],
 
-          // ── O'chirishni tasdiqlash overlay: blur + karta ustida ──
+          // ── O'chirishni tasdiqlash overlay: blur fon + karta ustida ──
           if (_deleteItem != null) ...[
             Positioned.fill(
               child: GestureDetector(
                 onTap: _endDelete,
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(color: Colors.black.withValues(alpha: 0.35)),
                 ),
               ),
@@ -521,15 +521,13 @@ class _CardStack extends StatelessWidget {
             left: 0,
             right: 0,
             height: _cardH,
-            child: GestureDetector(
-              onTap: onToggle,
-              child: _HisobCard(
-                hisob: hisoblar[i],
-                allHisoblar: hisoblar,
-                stackExpanded: expanded,
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
+            child: _HisobCard(
+              hisob: hisoblar[i],
+              allHisoblar: hisoblar,
+              stackExpanded: expanded,
+              onToggle: onToggle,
+              onEdit: onEdit,
+              onDelete: onDelete,
             ),
           );
         }),
@@ -542,12 +540,14 @@ class _HisobCard extends StatelessWidget {
   final HisobModel hisob;
   final List<HisobModel> allHisoblar;
   final bool stackExpanded;
+  final VoidCallback onToggle;
   final void Function(Object) onEdit;
   final void Function(Object) onDelete;
   const _HisobCard({
     required this.hisob,
     required this.allHisoblar,
     required this.stackExpanded,
+    required this.onToggle,
     required this.onEdit,
     required this.onDelete,
   });
@@ -567,7 +567,10 @@ class _HisobCard extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Positioned.fill(
-          child: Container(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onToggle,
+            child: Container(
             decoration: BoxDecoration(
               color: hisob.color,
               borderRadius: BorderRadius.circular(24),
@@ -625,6 +628,7 @@ class _HisobCard extends StatelessWidget {
               ],
             ),
           ),
+          ),
         ),
 
         // Glass tugmalar — faqat expanded holda ko'rinadi
@@ -640,21 +644,25 @@ class _HisobCard extends StatelessWidget {
                 children: [
                   _GlassBtn(
                     icon: Icons.edit_outlined,
+                    tint: hisob.color,
                     onTap: () => onEdit(hisob),
                   ),
                   const SizedBox(width: 12),
                   _GlassBtn(
                     icon: Icons.swap_vert_rounded,
+                    tint: hisob.color,
                     onTap: () => _showTopUp(context),
                   ),
                   const SizedBox(width: 12),
                   _GlassBtn(
                     icon: Icons.swap_horiz_rounded,
+                    tint: hisob.color,
                     onTap: () => _showTransfer(context),
                   ),
                   const SizedBox(width: 12),
                   _GlassBtn(
                     icon: Icons.delete_outline_rounded,
+                    tint: hisob.color,
                     onTap: () => onDelete(hisob),
                   ),
                 ],
@@ -732,15 +740,13 @@ class _MaqsadStack extends StatelessWidget {
             left: 0,
             right: 0,
             height: _cardH,
-            child: GestureDetector(
-              onTap: onToggle,
-              child: _MaqsadCard(
-                maqsad: maqsadlar[i],
-                allMaqsadlar: maqsadlar,
-                stackExpanded: expanded,
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
+            child: _MaqsadCard(
+              maqsad: maqsadlar[i],
+              allMaqsadlar: maqsadlar,
+              stackExpanded: expanded,
+              onToggle: onToggle,
+              onEdit: onEdit,
+              onDelete: onDelete,
             ),
           );
         }),
@@ -753,12 +759,14 @@ class _MaqsadCard extends StatelessWidget {
   final MaqsadModel maqsad;
   final List<MaqsadModel> allMaqsadlar;
   final bool stackExpanded;
+  final VoidCallback onToggle;
   final void Function(Object) onEdit;
   final void Function(Object) onDelete;
   const _MaqsadCard({
     required this.maqsad,
     required this.allMaqsadlar,
     required this.stackExpanded,
+    required this.onToggle,
     required this.onEdit,
     required this.onDelete,
   });
@@ -1022,7 +1030,13 @@ class _MaqsadCard extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned.fill(child: card),
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onToggle,
+            child: card,
+          ),
+        ),
         // Glass tugmalar — faqat expanded holda; bajarilgan maqsadda chiqmaydi
         if (!done)
           Positioned(
@@ -1037,21 +1051,25 @@ class _MaqsadCard extends StatelessWidget {
                   children: [
                     _GlassBtn(
                       icon: Icons.edit_outlined,
+                      tint: maqsad.color,
                       onTap: () => onEdit(maqsad),
                     ),
                     const SizedBox(width: 12),
                     _GlassBtn(
                       icon: Icons.add_rounded,
+                      tint: maqsad.color,
                       onTap: () => _showTopUp(context),
                     ),
                     const SizedBox(width: 12),
                     _GlassBtn(
                       icon: Icons.swap_horiz_rounded,
+                      tint: maqsad.color,
                       onTap: () => _showTransfer(context),
                     ),
                     const SizedBox(width: 12),
                     _GlassBtn(
                       icon: Icons.delete_outline_rounded,
+                      tint: maqsad.color,
                       onTap: () => onDelete(maqsad),
                     ),
                   ],
@@ -1240,14 +1258,12 @@ class _QarzStack extends StatelessWidget {
             left: 0,
             right: 0,
             height: _cardH,
-            child: GestureDetector(
-              onTap: onToggle,
-              child: _QarzCard(
-                qarz: qarzlar[i],
-                stackExpanded: expanded,
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
+            child: _QarzCard(
+              qarz: qarzlar[i],
+              stackExpanded: expanded,
+              onToggle: onToggle,
+              onEdit: onEdit,
+              onDelete: onDelete,
             ),
           );
         }),
@@ -1259,11 +1275,13 @@ class _QarzStack extends StatelessWidget {
 class _QarzCard extends StatelessWidget {
   final QarzModel qarz;
   final bool stackExpanded;
+  final VoidCallback onToggle;
   final void Function(Object) onEdit;
   final void Function(Object) onDelete;
   const _QarzCard({
     required this.qarz,
     required this.stackExpanded,
+    required this.onToggle,
     required this.onEdit,
     required this.onDelete,
   });
@@ -1488,7 +1506,13 @@ class _QarzCard extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned.fill(child: card),
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onToggle,
+            child: card,
+          ),
+        ),
         // Glass tugmalar — faqat expanded holda ko'rinadi
         Positioned(
           bottom: -_btnHalf,
@@ -1502,6 +1526,7 @@ class _QarzCard extends StatelessWidget {
                 children: [
                   _GlassBtn(
                     icon: Icons.edit_outlined,
+                    tint: qarz.isQarzBerdim ? _qarzGreen : _qarzRed,
                     onTap: () => onEdit(qarz),
                   ),
                   const SizedBox(width: 12),
@@ -1509,16 +1534,19 @@ class _QarzCard extends StatelessWidget {
                     icon: qarz.isQarzBerdim
                         ? Icons.trending_up_rounded
                         : Icons.trending_down_rounded,
+                    tint: qarz.isQarzBerdim ? _qarzGreen : _qarzRed,
                     onTap: () => _showTolov(context),
                   ),
                   const SizedBox(width: 12),
                   _GlassBtn(
                     icon: Icons.receipt_long_rounded,
+                    tint: qarz.isQarzBerdim ? _qarzGreen : _qarzRed,
                     onTap: () => _showHistory(context),
                   ),
                   const SizedBox(width: 12),
                   _GlassBtn(
                     icon: Icons.delete_outline_rounded,
+                    tint: qarz.isQarzBerdim ? _qarzGreen : _qarzRed,
                     onTap: () => onDelete(qarz),
                   ),
                 ],
@@ -1653,31 +1681,36 @@ class _UzsBadge extends StatelessWidget {
 }
 
 // ── Glass tugma ───────────────────────────────────────────────────────
+// Barcha tablarda bir xil uslub: yengil rangli fon (karta rangi ~22%),
+// ingichka rangli chegara, ikonka esa OQ.
 class _GlassBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _GlassBtn({required this.icon, required this.onTap});
+  final Color tint; // karta rangi
+  const _GlassBtn({required this.icon, required this.onTap, required this.tint});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            width: _btnSize,
-            height: _btnSize,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 1.2,
-              ),
+    // BackdropFilter (blur) olib tashlandi — tezlik uchun yengil rangli fon.
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: _btnSize,
+          height: _btnSize,
+          decoration: BoxDecoration(
+            color: tint.withValues(alpha: 0.22),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: tint.withValues(alpha: 0.55),
+              width: 1.4,
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
           ),
+          child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
@@ -1713,8 +1746,25 @@ class _EditOverlayCardState extends State<_EditOverlayCard>
   bool _isQarzBerdim = false; // Qarz create — yo'nalish
   HisobModel? _selectedHisob; // Qarz create — tanlangan hisob
   late final AnimationController _flash; // qarz berishda mablag' yetmasa sirena
+  bool _nameInited = false; // tarjimalangan nomni bir marta qo'yish uchun
 
   bool get _create => widget.item == null;
+
+  // Tahrirlashda nom maydonini kartadagidek TARJIMALANGAN nom bilan to'ldiradi
+  // (masalan "Cash" emas, "Naqd pul"). context kerak, shuning uchun bu yerda.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_nameInited || _create) return;
+    _nameInited = true;
+    final l10n = context.l10n;
+    final item = widget.item;
+    if (widget.tab == 2 && item is MaqsadModel) {
+      _nameCtrl.text = item.displayName(l10n);
+    } else if (widget.tab == 1 && item is HisobModel) {
+      _nameCtrl.text = item.displayName(l10n);
+    }
+  }
 
   @override
   void initState() {
@@ -2328,7 +2378,11 @@ class _DeleteOverlayCard extends StatelessWidget {
   void _confirm(BuildContext context) {
     switch (tab) {
       case 0:
-        context.read<QarzCubit>().deleteQarz(item as QarzModel);
+        context.read<QarzCubit>().deleteQarz(
+              item as QarzModel,
+              hisobCubit: context.read<HisobCubit>(),
+              amalCubit: context.read<AmalCubit>(),
+            );
       case 2:
         context.read<MaqsadCubit>().deleteMaqsad(item as MaqsadModel);
       default:
@@ -2339,6 +2393,7 @@ class _DeleteOverlayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final Color color;
     final String name;
     switch (tab) {
@@ -2349,16 +2404,15 @@ class _DeleteOverlayCard extends StatelessWidget {
       case 2:
         final m = item as MaqsadModel;
         color = m.color;
-        name = m.name;
+        name = m.displayName(l10n);
       default:
         final h = item as HisobModel;
         color = h.color;
-        name = h.name;
+        name = h.displayName(l10n);
     }
     // Delete kartasi har doim rangli (oq emas) — tugmalar oq glass bo'lib,
     // barcha tablarda bir xil ko'rinishi uchun.
     const fg = Colors.white;
-    final l10n = context.l10n;
     final message = tab == 2
         ? '${l10n.tasdiqOchirish} ${l10n.taslimBolma}'
         : '${l10n.tasdiqOchirish} ${l10n.umumiyBalansaTasir}';
@@ -2412,10 +2466,16 @@ class _DeleteOverlayCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _GlassBtn(icon: Icons.close_rounded, onTap: onDone),
+                // Dialog foni karta rangida — tugmalar oq (kontrast uchun)
+                _GlassBtn(
+                  icon: Icons.close_rounded,
+                  tint: Colors.white,
+                  onTap: onDone,
+                ),
                 const SizedBox(width: 12),
                 _GlassBtn(
                   icon: Icons.check_rounded,
+                  tint: Colors.white,
                   onTap: () => _confirm(context),
                 ),
               ],
@@ -2694,6 +2754,7 @@ class BajarilganMaqsadlarScreen extends StatelessWidget {
                     maqsad: bajarilganlar[i],
                     allMaqsadlar: bajarilganlar,
                     stackExpanded: false,
+                    onToggle: () {},
                     onEdit: (_) {},
                     onDelete: (_) {},
                   ),
@@ -2782,6 +2843,7 @@ class BajarilganQarzlarScreen extends StatelessWidget {
                   child: _QarzCard(
                     qarz: bitganlar[i],
                     stackExpanded: false,
+                    onToggle: () {},
                     onEdit: (_) {},
                     onDelete: (_) {},
                   ),

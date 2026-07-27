@@ -23,6 +23,7 @@ import 'package:pulkam/features/profile/data/profile_model.dart';
 import 'package:pulkam/features/profile/logic/profile_cubit.dart';
 import 'package:pulkam/services/notification_service.dart';
 import 'package:pulkam/features/voice/ui/floating_mic_button.dart';
+import 'package:pulkam/services/widget_sync.dart';
 // appQulflangan uchun ham shu import ishlatiladi
 
 // Floating mikrofon dialogi uchun global navigator
@@ -210,7 +211,7 @@ class MyApp extends StatelessWidget {
               cardColor: Colors.white,
               useMaterial3: true,
             ),
-            home: const _HomeGate(),
+            home: const WidgetSync(child: _HomeGate()),
           );
         },
       ),
